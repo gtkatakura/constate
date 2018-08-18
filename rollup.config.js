@@ -7,9 +7,9 @@ import { uglify } from "rollup-plugin-uglify";
 import ignore from "rollup-plugin-ignore";
 import pkg from "./package.json";
 
-const { name } = pkg;
 const external = Object.keys(pkg.peerDependencies || {});
-const allExternal = external.concat(Object.keys(pkg.dependencies || {}));
+const allExternal = [...external, Object.keys(pkg.dependencies || {})];
+const extensions = [".ts", ".tsx", ".js", ".jsx", ".json"];
 
 const makeExternalPredicate = externalArr => {
   if (externalArr.length === 0) {
@@ -25,58 +25,53 @@ const common = {
 
 const createCommonPlugins = () => [
   babel({
-    exclude: "node_modules/**",
-    plugins: ["external-helpers"]
-  }),
-  commonjs({
-    include: /node_modules/,
-    ignoreGlobal: true
+    exclude: "node_modules/**"
   }),
   filesize()
 ];
 
-const main = Object.assign({}, common, {
-  output: {
-    name,
-    file: pkg.main,
-    format: "cjs",
-    exports: "named"
-  },
+const main = {
+  input: "src/index.js",
+  output: [
+    {
+      file: pkg.main,
+      format: "cjs",
+      exports: "named"
+    },
+    {
+      file: pkg.module,
+      format: "es"
+    }
+  ],
   external: makeExternalPredicate(allExternal),
-  plugins: createCommonPlugins().concat([resolve()])
-});
-
-const module = Object.assign({}, common, {
-  output: {
-    file: pkg.module,
-    format: "es"
-  },
-  external: makeExternalPredicate(allExternal),
-  plugins: createCommonPlugins().concat([resolve()])
-});
+  plugins: [...createCommonPlugins(), resolve({ extensions })]
+};
 
 const unpkg = Object.assign({}, common, {
   output: {
-    name,
+    name: pkg.name,
     file: pkg.unpkg,
     format: "umd",
     exports: "named",
     globals: {
-      react: "React",
-      "react-dom": "ReactDOM"
+      react: "React"
     }
   },
   external: makeExternalPredicate(external),
-  plugins: createCommonPlugins().concat([
+  plugins: [
+    ...createCommonPlugins(),
     ignore(["stream"]),
     uglify(),
+    commonjs({
+      include: /node_modules/
+    }),
     replace({
       "process.env.NODE_ENV": JSON.stringify("production")
     }),
     resolve({
       preferBuiltins: false
     })
-  ])
+  ]
 });
 
-export default [main, module, unpkg];
+export default [main, unpkg];

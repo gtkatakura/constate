@@ -9,6 +9,12 @@
     "jest": true,
     "browser": true
   },
+  "settings": {
+    "import/resolver": {
+      "node": true,
+      "eslint-import-resolver-typescript": true
+    }
+  },
   "rules": {
     "react/prop-types": "off",
     "import/no-extraneous-dependencies": "off",
@@ -17,5 +23,19 @@
     "react/require-default-props": "off",
     "react/destructuring-assignment": "off",
     "jsx-a11y/anchor-is-valid": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "parser": "typescript-eslint-parser",
+      "plugins": [
+        "typescript"
+      ],
+      "rules": {
+        "no-undef": "off",
+        "no-unused-vars": "off",
+        "no-restricted-globals": "off"
+      }
+    }
+  ]
 }
