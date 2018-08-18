@@ -5,8 +5,10 @@ import {
   SetState,
   StateUpdater,
   State,
-  FunctionArgs,
-  ValueOf
+  ValueOf,
+  EffectArgs,
+  Dictionary,
+  ChildrenFunction
 } from "./types";
 
 type Map<State, T extends string> =
@@ -14,17 +16,14 @@ type Map<State, T extends string> =
   | SelectorMap<State>
   | EffectMap<State, T>;
 
-type Fn<M extends Map<any, any>> = ValueOf<M>;
-
-type MapTransform<M extends Map<any, any>, F extends Fn<M>> = (
-  fn: F,
-  key: keyof M
-) => F;
-
-const mapWith = <M extends Map<any, any>, F extends Fn<M>>(
+const mapWith = <
+  C extends ChildrenFunction,
+  M extends Map<any, any>,
+  F extends ValueOf<M>
+>(
   map: M,
-  transform: MapTransform<M, F>
-) =>
+  transform: (fn: F, key: keyof M) => C
+): Dictionary<C> =>
   Object.keys(map).reduce(
     (final, key) => ({
       ...final,
@@ -41,24 +40,18 @@ export const mapSetStateToActions = <State, T extends string>(
     setState(action(...args), undefined, key as T)
   );
 
-type ArgumentFn<State, T extends string> = (
-  x: any,
-  key: T
-) => Partial<FunctionArgs<State, T>>;
+export const mapStateToSelectors = <S extends State>(
+  state: S,
+  selectorMap: SelectorMap<S>
+) => mapWith(selectorMap, selector => (...args) => selector(...args)(state));
 
-export const mapArgumentToFunctions = <State, T extends string>(
-  argument: typeof fnMap extends SelectorMap<State>
-    ? State
-    : ArgumentFn<State, T>,
-  fnMap: SelectorMap<State> | EffectMap<State, T>
-): typeof fnMap =>
-  mapWith(fnMap, (fn, key) => (...args: any[]) => {
-    const selectOrEffect = fn(...args);
-    if (typeof argument === "function") {
-      return selectOrEffect(argument(fn, key as T));
-    }
-    return selectOrEffect(argument);
-  });
+export const mapArgsToEffects = <State, T extends string>(
+  getArgs: (x: any, key: T) => EffectArgs<State, T>,
+  effectMap: EffectMap<State, T>
+) =>
+  mapWith(effectMap, (effect, key) => (...args) =>
+    effect(...args)(getArgs(undefined, key as T))
+  );
 
 export const parseUpdater = <S extends State>(
   updaterOrState: StateUpdater<S> | Partial<S>,
