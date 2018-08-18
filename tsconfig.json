@@ -1,13 +1,12 @@
 {
   "compilerOptions": {
-    "outFile": "dist/constate.d.ts",
+    "outDir": "dist/ts",
     "target": "esnext",
-    "module": "system",
+    "module": "esnext",
     "moduleResolution": "node",
     "jsx": "react",
-    "allowJs": true,
-    "declaration": true,
     "strict": true,
+    "declaration": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,

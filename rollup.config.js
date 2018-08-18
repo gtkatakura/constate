@@ -11,14 +11,6 @@ const external = Object.keys(pkg.peerDependencies || {});
 const allExternal = [...external, Object.keys(pkg.dependencies || {})];
 const extensions = [".ts", ".tsx", ".js", ".jsx", ".json"];
 
-const makeExternalPredicate = externalArr => {
-  if (externalArr.length === 0) {
-    return () => false;
-  }
-  const pattern = new RegExp(`^(${externalArr.join("|")})($|/)`);
-  return id => pattern.test(id);
-};
-
 const common = {
   input: "src/index.js"
 };
@@ -43,7 +35,7 @@ const main = {
       format: "es"
     }
   ],
-  external: makeExternalPredicate(allExternal),
+  external: allExternal,
   plugins: [...createCommonPlugins(), resolve({ extensions })]
 };
 
@@ -57,7 +49,7 @@ const unpkg = Object.assign({}, common, {
       react: "React"
     }
   },
-  external: makeExternalPredicate(external),
+  external,
   plugins: [
     ...createCommonPlugins(),
     ignore(["stream"]),
