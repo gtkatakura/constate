@@ -8,13 +8,14 @@ import {
   ValueOf,
   EffectArgs,
   Dictionary,
-  ChildrenFunction
+  ChildrenFunction,
+  Key
 } from "./types";
 
-type Map<State, T extends string> =
-  | ActionMap<State>
-  | SelectorMap<State>
-  | EffectMap<State, T>;
+type Map<State, K extends Key> =
+  | ActionMap<State, K>
+  | SelectorMap<State, K>
+  | EffectMap<State, K>;
 
 const mapWith = <
   C extends ChildrenFunction,
@@ -32,25 +33,25 @@ const mapWith = <
     {}
   );
 
-export const mapSetStateToActions = <State, T extends string>(
-  setState: SetState<State, T>,
-  actionMap: ActionMap<State>
+export const mapSetStateToActions = <State, K extends Key>(
+  setState: SetState<State, K>,
+  actionMap: ActionMap<State, K>
 ) =>
   mapWith(actionMap, (action, key) => (...args) =>
-    setState(action(...args), undefined, key as T)
+    setState(action(...args), undefined, key as K)
   );
 
-export const mapStateToSelectors = <S extends State>(
+export const mapStateToSelectors = <S extends State, K extends Key>(
   state: S,
-  selectorMap: SelectorMap<S>
+  selectorMap: SelectorMap<S, K>
 ) => mapWith(selectorMap, selector => (...args) => selector(...args)(state));
 
-export const mapArgsToEffects = <State, T extends string>(
-  getArgs: (x: any, key: T) => EffectArgs<State, T>,
-  effectMap: EffectMap<State, T>
+export const mapArgsToEffects = <State, K extends Key>(
+  getArgs: (x: any, key: K) => EffectArgs<State, K>,
+  effectMap: EffectMap<State, K>
 ) =>
   mapWith(effectMap, (effect, key) => (...args) =>
-    effect(...args)(getArgs(undefined, key as T))
+    effect(...args)(getArgs(undefined, key as K))
   );
 
 export const parseUpdater = <S extends State>(

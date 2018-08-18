@@ -1,13 +1,57 @@
-import React from "react";
+import * as React from "react";
 import Consumer from "./Consumer";
 import ContextContainer from "./ContextContainer";
 import {
   mapSetStateToActions,
-  mapArgumentToFunctions,
+  mapStateToSelectors,
+  mapArgsToEffects,
   parseUpdater
 } from "./utils";
+import {
+  ActionMap,
+  State,
+  SelectorMap,
+  EffectMap,
+  OnMount,
+  OnUpdate,
+  OnUnmount,
+  ShouldUpdate,
+  Key,
+  MapOf
+} from "./types";
 
-class Container extends React.Component {
+interface ContainerProps<
+  S extends State,
+  AK extends Key,
+  SK extends Key,
+  EK extends Key,
+  K extends Key = AK | SK | EK | "onMount" | "onUpdate" | "onUnmount"
+> {
+  initialState: S;
+  actions?: ActionMap<S, AK>;
+  selectors?: SelectorMap<S, SK>;
+  effects?: EffectMap<S, EK>;
+  context?: string;
+  onMount?: OnMount<S>;
+  onUpdate?: OnUpdate<S, K>;
+  onUnmount?: OnUnmount<S>;
+  shouldUpdate?: ShouldUpdate<S>;
+  children: (
+    props:
+      | S
+      | MapOf<AK, ActionMap<S, AK>[AK]>
+      | MapOf<SK, SelectorMap<S, SK>[SK]>
+      | MapOf<EK, EffectMap<S, EK>[EK]>
+  ) => React.ReactNode;
+}
+
+class Container<
+  S,
+  AK extends Key,
+  SK extends Key,
+  EK extends Key,
+  K extends Key
+> extends React.Component<ContainerProps<S, AK, SK, EK, K>, S> {
   static defaultProps = {
     initialState: {}
   };
@@ -77,8 +121,8 @@ class Container extends React.Component {
     return children({
       ...this.state,
       ...(actions && mapSetStateToActions(this.handleSetState, actions)),
-      ...(selectors && mapArgumentToFunctions(this.state, selectors)),
-      ...(effects && mapArgumentToFunctions(this.getArgs, effects))
+      ...(selectors && mapStateToSelectors(this.state, selectors)),
+      ...(effects && mapArgsToEffects(this.getArgs, effects))
     });
   }
 }

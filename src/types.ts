@@ -1,33 +1,27 @@
-export type ValueOf<T> = T[keyof T];
-
+export type Key = string;
 export type Dictionary<T> = { [key: string]: T };
+export type ValueOf<T> = T[keyof T];
+export type MapOf<K extends Key, Value> = { [key in K]: Value };
 
 export interface State {
   [key: string]: any;
 }
 
 export interface StateUpdater<S extends State> {
-  (state: S): Partial<S>;
+  (state: Readonly<S>): Partial<S>;
 }
 
 export interface SetStateCallback {
   (): void;
 }
 
-export interface SetState<S extends State, T extends string> {
+export interface SetState<S extends State, K extends Key> {
   (
     updaterOrState: StateUpdater<S> | Partial<S>,
     callback?: SetStateCallback,
-    type?: T
+    type?: K
   ): void;
 }
-
-export interface FunctionArgs<S extends State, T extends string> {
-  state: S;
-  setState: SetState<S, T>;
-}
-
-export interface InitialState extends State {}
 
 export interface ChildrenFunction {
   (...args: any[]): any;
@@ -37,27 +31,54 @@ export interface Action<S extends State> {
   (...args: any[]): StateUpdater<S> | Partial<S>;
 }
 
-export interface ActionMap<S> {
-  [actionName: string]: Action<S>;
-}
-
 export interface Selector<S extends State> {
-  (...args: any[]): (state: S) => any;
+  (...args: any[]): (state: Readonly<S>) => any;
 }
 
-export interface SelectorMap<S> {
-  [selectorName: string]: Selector<S>;
+export interface EffectArgs<S extends State, K extends Key> {
+  state: Readonly<S>;
+  setState: SetState<S, K>;
 }
 
-export type EffectArgs<S, T extends string> = Pick<
-  FunctionArgs<S, T>,
-  "state" | "setState"
->;
-
-export interface Effect<S, T extends string> {
-  (...args: any[]): (args: EffectArgs<S, T>) => Promise<T> | void;
+export interface Effect<S, K extends Key> {
+  (...args: any[]): (args: EffectArgs<S, K>) => Promise<any> | void;
 }
 
-export interface EffectMap<S, T extends string> {
-  [effectName: string]: Effect<S, T>;
+export type ActionMap<S, K extends Key> = { [actionName in K]: Action<S> };
+
+export type SelectorMap<S, K extends Key> = {
+  [selectorName in K]: Selector<S>
+};
+
+export type EffectMap<S, K extends Key> = { [effectName in K]: Effect<S, K> };
+
+export interface OnMountArgs<S, K extends Key> extends EffectArgs<S, K> {}
+
+export interface OnMount<S> {
+  (args: OnMountArgs<S, "onMount">): Promise<any> | void;
+}
+
+export interface OnUpdateArgs<S, K extends Key, KK extends Key>
+  extends EffectArgs<S, K> {
+  prevState: Readonly<S>;
+  type: KK;
+}
+
+export interface OnUpdate<S, K extends Key> {
+  (args: OnUpdateArgs<S, "onUpdate", K>): Promise<any> | void;
+}
+
+export interface OnUnmountArgs<S, K extends Key> extends EffectArgs<S, K> {}
+
+export interface OnUnmount<S> {
+  (args: OnUnmountArgs<S, "onUnmount">): Promise<any> | void;
+}
+
+export interface ShouldUpdateArgs<S extends State> {
+  state: Readonly<S>;
+  nextState: Readonly<S>;
+}
+
+export interface ShouldUpdate<S> {
+  (args: ShouldUpdateArgs<S>): boolean;
 }
