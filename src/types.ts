@@ -11,7 +11,7 @@ export interface State {
 }
 
 export interface StateUpdater<S extends State> {
-  (state: Readonly<S>): { [key in keyof S]?: any };
+  (state: Readonly<S>): { [key in keyof S]?: S[key] };
 }
 
 export interface SetStateCallback {
@@ -20,14 +20,14 @@ export interface SetStateCallback {
 
 export interface SetState<S extends State, K extends Key> {
   (
-    updaterOrState: StateUpdater<S> | { [key in keyof S]?: any },
-    callback: SetStateCallback | undefined,
-    type: K
+    updaterOrState: StateUpdater<S> | { [key in keyof S]?: S[key] },
+    callback?: SetStateCallback,
+    type?: K
   ): void;
 }
 
 export interface Action<S extends State> {
-  (...args: any[]): StateUpdater<S> | { [key in keyof S]?: any };
+  (...args: any[]): StateUpdater<S> | { [key in keyof S]?: S[key] };
 }
 
 export interface Selector<S extends State> {
@@ -43,17 +43,17 @@ export interface Effect<S, K extends Key> {
   (...args: any[]): (args: EffectArgs<S, K>) => Promise<any> | void;
 }
 
-export type ActionMap<S, K extends Key> =
-  | { [actionName in K]: Action<S> }
-  | { [actionName: string]: Action<S> };
+export type ActionMap<S, K extends Key> = { [actionName in K]: Action<S> } & {
+  [actionName: string]: Action<S>;
+};
 
-export type SelectorMap<S, K extends Key> =
-  | { [selectorName in K]: Selector<S> }
-  | { [selectorName: string]: Selector<S> };
+export type SelectorMap<S, K extends Key> = {
+  [selectorName in K]: Selector<S>
+} & { [selectorName: string]: Selector<S> };
 
-export type EffectMap<S, K extends Key> =
-  | { [effectName in K]: Effect<S, K> }
-  | { [effectName: string]: Effect<S, K> };
+export type EffectMap<S, K extends Key> = {
+  [effectName in K]: Effect<S, K>
+} & { [effectName: string]: Effect<S, K> };
 
 export interface OnMountArgs<S, K extends Key> extends EffectArgs<S, K> {}
 

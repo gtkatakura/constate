@@ -1,22 +1,35 @@
 import * as React from "react";
 import Container from "./Container";
+import { Selector, Action, ActionMap } from "./types";
+
+interface State {
+  foo: boolean;
+  z: boolean | number;
+}
+
+const initialState: State = {
+  foo: false,
+  z: 1
+};
+
+const action1: Action<State> = (oi: boolean) => ({ z: oi });
+
+const action2: Action<State> = () => state => ({ foo: state.foo, z: 2 });
 
 const Lol = () => (
   <Container
-    initialState={{ foo: false, z: 1 }}
-    actions={{
-      bar: () => state => ({ foo: state.foo }),
-      dsadsa: () => state => ({ foo: state.foo, z: 2 })
-    }}
+    initialState={initialState}
+    actions={{ action1, action2 }}
     selectors={{
-      loler: () => state => true
+      bos: (foo: string) => state => true
     }}
     effects={{
       cacete: () => ({ state, setState }) => {}
     }}
     onMount={({ state, setState }) => {}}
     onUpdate={({ type, state, prevState, setState }) => {}}
+    shouldUpdate={({ state, nextState }) => }
   >
-    {lol => lol}
+    {lol => lol.bos()}
   </Container>
 );

@@ -17,7 +17,8 @@ import {
   OnUnmount,
   ShouldUpdate,
   Key,
-  SetState
+  SetState,
+  EffectArgs
 } from "./types";
 
 interface ContainerProps<
@@ -37,7 +38,7 @@ interface ContainerProps<
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
   children: (
-    props: { [key in keyof S]: S[key] } & { [key in K]: any }
+    props: { [key in keyof S]: S[key] } & { [key in K]: Function }
   ) => React.ReactNode;
 }
 
@@ -52,9 +53,9 @@ class Container<
     initialState: {}
   };
 
-  state = this.props.initialState;
+  state: S = this.props.initialState;
 
-  ignoreState = null;
+  ignoreState: S | boolean | null = null;
 
   componentDidMount() {
     const { context, onMount } = this.props;
@@ -63,7 +64,10 @@ class Container<
     }
   }
 
-  shouldComponentUpdate(nextProps, nextState) {
+  shouldComponentUpdate(
+    nextProps: ContainerProps<S, AK, SK, EK, K>,
+    nextState: S
+  ) {
     const { context, shouldUpdate } = this.props;
     if (!context && shouldUpdate) {
       const couldUpdate = shouldUpdate({ state: this.state, nextState });
@@ -80,18 +84,24 @@ class Container<
     }
   }
 
-  getArgs = (additionalArgs, type) => ({
+  getArgs = (
+    additionalArgs: object | undefined,
+    type?: AK | SK | EK | "onMount" | "onUpdate" | "onUnmount"
+  ): EffectArgs<S, AK | SK | EK | "onMount" | "onUpdate" | "onUnmount"> => ({
     state: this.state,
     setState: (u, c) => this.handleSetState(u, c, type),
     ...additionalArgs
   });
 
-  handleSetState: SetState<S, K> = (updater, callback, type) => {
-    let prevState: S;
+  handleSetState: SetState<
+    S,
+    AK | SK | EK | "onMount" | "onUpdate" | "onUnmount"
+  > = (updater, callback, type) => {
+    let prevState: { -readonly [key in keyof S]: S[key] };
 
     this.setState(
       state => {
-        prevState = state;
+        prevState = state as typeof prevState;
         return parseUpdater(updater, state);
       },
       () => {
@@ -114,12 +124,15 @@ class Container<
 
     const { children, actions, selectors, effects } = this.props;
 
-    return children({
-      // ...(this.state as S),
-      // ...(actions && mapSetStateToActions(this.handleSetState, actions)),
-      ...(selectors && mapStateToSelectors(this.state, selectors))
-      // ...(effects && mapArgsToEffects(this.getArgs, effects))
-    });
+    return children(
+      Object.assign(
+        {},
+        this.state,
+        actions && mapSetStateToActions<S, AK>(this.handleSetState, actions),
+        selectors && mapStateToSelectors<S, SK>(this.state, selectors),
+        effects && mapArgsToEffects<S, EK>(this.getArgs, effects)
+      )
+    );
   }
 }
 
