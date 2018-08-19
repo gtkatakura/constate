@@ -8,18 +8,17 @@ import {
   ValueOf,
   EffectArgs,
   Dictionary,
-  ChildrenFunction,
   Key
 } from "./types";
 
-type Map<State, K extends Key> =
+type APIMap<State, K extends Key> =
   | ActionMap<State, K>
   | SelectorMap<State, K>
   | EffectMap<State, K>;
 
 const mapWith = <
-  C extends ChildrenFunction,
-  M extends Map<any, any>,
+  C extends (...args: any[]) => any,
+  M extends APIMap<any, any>,
   F extends ValueOf<M>
 >(
   map: M,
@@ -55,7 +54,7 @@ export const mapArgsToEffects = <State, K extends Key>(
   );
 
 export const parseUpdater = <S extends State>(
-  updaterOrState: StateUpdater<S> | Partial<S>,
+  updaterOrState: StateUpdater<S> | Pick<S, keyof S>,
   state: S
 ) =>
   typeof updaterOrState === "function" ? updaterOrState(state) : updaterOrState;

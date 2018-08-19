@@ -1,6 +1,6 @@
 import * as React from "react";
-import Consumer from "./Consumer";
-import ContextContainer from "./ContextContainer";
+// import Consumer from "./Consumer";
+// import ContextContainer from "./ContextContainer";
 import {
   mapSetStateToActions,
   mapStateToSelectors,
@@ -17,7 +17,7 @@ import {
   OnUnmount,
   ShouldUpdate,
   Key,
-  MapOf
+  SetState
 } from "./types";
 
 interface ContainerProps<
@@ -25,7 +25,7 @@ interface ContainerProps<
   AK extends Key,
   SK extends Key,
   EK extends Key,
-  K extends Key = AK | SK | EK | "onMount" | "onUpdate" | "onUnmount"
+  K extends Key = AK | SK | EK
 > {
   initialState: S;
   actions?: ActionMap<S, AK>;
@@ -37,21 +37,13 @@ interface ContainerProps<
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
   children: (
-    props:
-      | S
-      | MapOf<AK, ActionMap<S, AK>[AK]>
-      | MapOf<SK, SelectorMap<S, SK>[SK]>
-      | MapOf<EK, EffectMap<S, EK>[EK]>
+    props: { [key in keyof S]: S[key] } & { [key in AK]: any }
   ) => React.ReactNode;
 }
 
-class Container<
-  S,
-  AK extends Key,
-  SK extends Key,
-  EK extends Key,
-  K extends Key
-> extends React.Component<ContainerProps<S, AK, SK, EK, K>, S> {
+class Container<S extends State> extends React.Component<
+  ContainerProps<S, any, any, any>
+> {
   static defaultProps = {
     initialState: {}
   };
@@ -90,8 +82,8 @@ class Container<
     ...additionalArgs
   });
 
-  handleSetState = (updater, callback, type) => {
-    let prevState;
+  handleSetState: SetState<S, K> = (updater, callback, type) => {
+    let prevState: S;
 
     this.setState(
       state => {
@@ -108,21 +100,21 @@ class Container<
   };
 
   render() {
-    if (this.props.context) {
-      return (
-        <Consumer>
-          {props => <ContextContainer {...props} {...this.props} />}
-        </Consumer>
-      );
-    }
+    // if (this.props.context) {
+    //   return (
+    //     <Consumer>
+    //       {props => <ContextContainer {...props} {...this.props} />}
+    //     </Consumer>
+    //   );
+    // }
 
     const { children, actions, selectors, effects } = this.props;
 
     return children({
-      ...this.state,
-      ...(actions && mapSetStateToActions(this.handleSetState, actions)),
-      ...(selectors && mapStateToSelectors(this.state, selectors)),
-      ...(effects && mapArgsToEffects(this.getArgs, effects))
+      // ...(this.state as S),
+      // ...(actions && mapSetStateToActions(this.handleSetState, actions)),
+      // ...(selectors && mapStateToSelectors(this.state, selectors)),
+      // ...(effects && mapArgsToEffects(this.getArgs, effects))
     });
   }
 }

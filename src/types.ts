@@ -1,6 +1,9 @@
 export type Key = string;
+
 export type Dictionary<T> = { [key: string]: T };
+
 export type ValueOf<T> = T[keyof T];
+
 export type MapOf<K extends Key, Value> = { [key in K]: Value };
 
 export interface State {
@@ -8,7 +11,7 @@ export interface State {
 }
 
 export interface StateUpdater<S extends State> {
-  (state: Readonly<S>): Partial<S>;
+  (state: Readonly<S>): { [key in keyof S]?: any };
 }
 
 export interface SetStateCallback {
@@ -17,18 +20,14 @@ export interface SetStateCallback {
 
 export interface SetState<S extends State, K extends Key> {
   (
-    updaterOrState: StateUpdater<S> | Partial<S>,
-    callback?: SetStateCallback,
-    type?: K
+    updaterOrState: StateUpdater<S> | { [key in keyof S]?: any },
+    callback: SetStateCallback | undefined,
+    type: K
   ): void;
 }
 
-export interface ChildrenFunction {
-  (...args: any[]): any;
-}
-
 export interface Action<S extends State> {
-  (...args: any[]): StateUpdater<S> | Partial<S>;
+  (...args: any[]): StateUpdater<S> | Pick<S, keyof S>;
 }
 
 export interface Selector<S extends State> {
