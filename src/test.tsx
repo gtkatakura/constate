@@ -20,6 +20,7 @@ const Lol = () => (
   <Container
     initialState={initialState}
     actions={{ action1, action2 }}
+    context="lol"
     selectors={{
       bos: (foo: string) => state => true
     }}
@@ -28,7 +29,7 @@ const Lol = () => (
     }}
     onMount={({ state, setState }) => {}}
     onUpdate={({ type, state, prevState, setState }) => {}}
-    shouldUpdate={({ state, nextState }) => }
+    shouldUpdate={({ state, nextState }) => false}
   >
     {lol => lol.bos()}
   </Container>

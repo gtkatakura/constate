@@ -8,7 +8,8 @@ import {
   ValueOf,
   EffectArgs,
   Dictionary,
-  Key
+  Key,
+  PartialState
 } from "./types";
 
 type APIMap<State, K extends Key> =
@@ -54,7 +55,7 @@ export const mapArgsToEffects = <State, K extends Key>(
   );
 
 export const parseUpdater = <S extends State>(
-  updaterOrState: StateUpdater<S> | Pick<S, keyof S>,
+  updaterOrState: StateUpdater<S> | PartialState<S>,
   state: S
 ) =>
   typeof updaterOrState === "function" ? updaterOrState(state) : updaterOrState;
