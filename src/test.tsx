@@ -14,6 +14,7 @@ const Lol = () => (
     effects={{
       cacete: () => ({ state, setState }) => {}
     }}
+    onMount={({ state, setState }) => {}}
     onUpdate={({ type, state, prevState, setState }) => {}}
   >
     {lol => lol}

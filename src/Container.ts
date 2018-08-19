@@ -25,7 +25,7 @@ interface ContainerProps<
   AK extends Key,
   SK extends Key,
   EK extends Key,
-  K extends Key = AK | SK | EK
+  K extends Key
 > {
   initialState: S;
   actions?: ActionMap<S, AK>;
@@ -33,17 +33,21 @@ interface ContainerProps<
   effects?: EffectMap<S, EK>;
   context?: string;
   onMount?: OnMount<S>;
-  onUpdate?: OnUpdate<S, K>;
+  onUpdate?: OnUpdate<S, K | "onMount" | "onUpdate" | "onUnmount">;
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
   children: (
-    props: { [key in keyof S]: S[key] } & { [key in AK]: any }
+    props: { [key in keyof S]: S[key] } & { [key in K]: any }
   ) => React.ReactNode;
 }
 
-class Container<S extends State> extends React.Component<
-  ContainerProps<S, any, any, any>
-> {
+class Container<
+  S extends State,
+  AK extends Key,
+  SK extends Key,
+  EK extends Key,
+  K extends Key = AK | SK | EK
+> extends React.Component<ContainerProps<S, AK, SK, EK, K>> {
   static defaultProps = {
     initialState: {}
   };
@@ -113,7 +117,7 @@ class Container<S extends State> extends React.Component<
     return children({
       // ...(this.state as S),
       // ...(actions && mapSetStateToActions(this.handleSetState, actions)),
-      // ...(selectors && mapStateToSelectors(this.state, selectors)),
+      ...(selectors && mapStateToSelectors(this.state, selectors))
       // ...(effects && mapArgsToEffects(this.getArgs, effects))
     });
   }
