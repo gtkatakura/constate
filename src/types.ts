@@ -16,6 +16,8 @@ export type EventKeys = "onMount" | "onUpdate" | "onUnmount";
 
 // export type PartialState<S> = { [key in keyof S]?: S[key] };
 
+export type State<API> = Partial<API>;
+
 export interface StateUpdater<S> {
   (state: Readonly<S>): Partial<S>;
 }
@@ -36,8 +38,10 @@ export interface SetState<S> {
   ): void;
 }
 
-export interface Action<S> {
-  (...args: any[]): StateUpdater<S> | Partial<S>;
+export interface Action<S, Lol = (...args: any[]) => void> {
+  (...args: Lol extends (...args: infer U) => any ? U : any[]):
+    | StateUpdater<S>
+    | Partial<S>;
 }
 
 export interface Selector<S> {
@@ -53,9 +57,9 @@ export interface Effect<S> {
   (...args: any[]): (args: EffectArgs<S>) => any;
 }
 
-export interface ActionMap<S> {
-  [actionName: string]: Action<S>;
-}
+export type ActionMap<State, API> = {
+  [actionName: string]: Action<State, ValueOf<API>>;
+};
 
 export interface SelectorMap<S> {
   [selectorName: string]: Selector<S>;
@@ -95,41 +99,15 @@ export interface ShouldUpdate<S> {
   (args: ShouldUpdateArgs<S>): boolean;
 }
 
-export interface ContainerProps<
-  S,
-  AM extends ActionMap<S>,
-  SM extends SelectorMap<S>,
-  EM extends EffectMap<S>
-> {
-  initialState: S;
-  actions?: AM;
-  selectors?: SM;
-  effects?: EM;
+export interface ContainerProps<State, API extends State> {
+  initialState: State;
+  actions?: ActionMap<State, API>;
+  selectors?: SelectorMap<State>;
+  effects?: SelectorMap<State>;
   context?: string;
-  onMount?: OnMount<S>;
-  onUpdate?: OnUpdate<S, keyof SM>;
-  onUnmount?: OnUnmount<S>;
-  shouldUpdate?: ShouldUpdate<S>;
-  children: (
-    props: S &
-      {
-        [Key in keyof AM]: ValueOf<AM> extends (...args: infer Args) => any
-          ? (...args: Args) => void
-          : any
-      } &
-      {
-        [Key in keyof SM]: ValueOf<SM> extends (
-          ...args: infer Args
-        ) => (state: S) => infer R
-          ? (...args: Args) => R
-          : any
-      } &
-      {
-        [Key in keyof EM]: ValueOf<EM> extends (
-          ...args: infer Args
-        ) => (...args: any[]) => infer R
-          ? (...args: Args) => R
-          : any
-      }
-  ) => React.ReactNode;
+  onMount?: OnMount<State>;
+  onUpdate?: OnUpdate<State, Exclude<keyof API, keyof State> | EventKeys>;
+  onUnmount?: OnUnmount<State>;
+  shouldUpdate?: ShouldUpdate<State>;
+  children: (api: API) => React.ReactNode;
 }

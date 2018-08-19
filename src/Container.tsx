@@ -13,15 +13,14 @@ import {
   EventKeys,
   ActionMap,
   SelectorMap,
-  EffectMap
+  EffectMap,
+  State
 } from "./types";
 
-class Container<
-  S,
-  AM extends ActionMap<S>,
-  SM extends SelectorMap<S>,
-  EM extends EffectMap<S>
-> extends React.Component<ContainerProps<S, AM, SM, EM>, S> {
+class Container<S, API extends S> extends React.Component<
+  ContainerProps<S, API>,
+  S
+> {
   static defaultProps = {
     initialState: {}
   };

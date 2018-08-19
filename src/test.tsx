@@ -7,27 +7,23 @@ interface State {
   z: boolean | number;
 }
 
+interface API extends State {
+  action1: (oi: boolean) => void;
+}
+
 const initialState: State = {
   foo: false,
   z: 1
 };
 
-const action1: Action<State> = (oi: boolean) => ({ z: oi });
-
-const action2: Action<State> = () => state => ({ foo: state.foo, z: 2 });
-
-const selectors: SelectorMap<State> = {
-  bos: ((foo: string) => state => true) as Selector<State>
-};
+const action1: Action<State, API["action1"]> = oi => state => ({
+  z: oi
+});
 
 const Lol = () => (
-  <Container
+  <Container<State, API>
     initialState={initialState}
-    actions={{ action1, action2 }}
-    selectors={selectors}
-    effects={{
-      cacete: (() => ({ state, setState }) => {}) as Effect<State>
-    }}
+    actions={{ action1 }}
     onMount={({ state, setState }) => {}}
     onUpdate={({ type, state, prevState, setState }) => {}}
     shouldUpdate={({ state, nextState }) => false}
