@@ -10,80 +10,83 @@ export type MapOf<K extends Key, Value> = { [key in K]: Value };
 
 export type EventKeys = "onMount" | "onUpdate" | "onUnmount";
 
-export interface State {
-  [key: string]: any;
+// export interface State {
+//   [key: string]: any;
+// }
+
+// export type PartialState<S> = { [key in keyof S]?: S[key] };
+
+export interface StateUpdater<S> {
+  (state: Readonly<S>): Partial<S>;
 }
 
-export type PartialState<S extends State> = { [key in keyof S]?: S[key] };
-
-export interface StateUpdater<S extends State> {
-  (state: Readonly<S>): PartialState<S>;
-}
-
-export interface SetStateCallback {
+export interface StateCallback {
   (): void;
 }
 
-export interface SetState<S extends State, K extends Key> {
+export interface SetState<S> {
   (
-    updaterOrState: StateUpdater<S> | PartialState<S>,
-    callback?: SetStateCallback,
-    type?: K
+    updaterOrState: StateUpdater<S> | Partial<S>,
+    callback?: StateCallback
+  ): void;
+  <K>(
+    updaterOrState: StateUpdater<S> | Partial<S>,
+    callback: StateCallback | undefined,
+    type: K
   ): void;
 }
 
-export interface Action<S extends State> {
-  (...args: any[]): StateUpdater<S> | PartialState<S>;
+export interface Action<S> {
+  (...args: any[]): StateUpdater<S> | Partial<S>;
 }
 
-export interface Selector<S extends State> {
+export interface Selector<S> {
   (...args: any[]): (state: Readonly<S>) => any;
 }
 
-export interface EffectArgs<S extends State, K extends Key> {
+export interface EffectArgs<S> {
   state: Readonly<S>;
-  setState: SetState<S, K>;
+  setState: SetState<S>;
 }
 
-export interface Effect<S, K extends Key> {
-  (...args: any[]): (args: EffectArgs<S, K>) => any;
+export interface Effect<S> {
+  (...args: any[]): (args: EffectArgs<S>) => any;
 }
 
-export type ActionMap<S, K extends Key> = { [actionName in K]: Action<S> } & {
+export interface ActionMap<S> {
   [actionName: string]: Action<S>;
-};
+}
 
-export type SelectorMap<S, K extends Key> = {
-  [selectorName in K]: Selector<S>
-} & { [selectorName: string]: Selector<S> };
+export interface SelectorMap<S> {
+  [selectorName: string]: Selector<S>;
+}
 
-export type EffectMap<S, K extends Key> = {
-  [effectName in K]: Effect<S, K>
-} & { [effectName: string]: Effect<S, K> };
+export interface EffectMap<S> {
+  [effectName: string]: Effect<S>;
+}
 
-export interface OnMountArgs<S, K extends Key> extends EffectArgs<S, K> {}
+export interface OnMountArgs<S> extends EffectArgs<S> {}
 
 export interface OnMount<S> {
-  (args: OnMountArgs<S, "onMount">): any;
+  (args: OnMountArgs<S>): any;
 }
 
-export interface OnUpdateArgs<S, K extends Key, KK extends Key>
-  extends EffectArgs<S, K> {
+export interface OnUpdateArgs<S, K> extends EffectArgs<S> {
   prevState: Readonly<S>;
-  type: KK;
+  type: K;
 }
 
-export interface OnUpdate<S, K extends Key> {
-  (args: OnUpdateArgs<S, "onUpdate", K>): any;
+export interface OnUpdate<S, K> {
+  (args: OnUpdateArgs<S, K>): any;
 }
 
-export interface OnUnmountArgs<S, K extends Key> extends EffectArgs<S, K> {}
+export interface OnUnmountArgs<S> extends EffectArgs<S> {}
 
 export interface OnUnmount<S> {
-  (args: OnUnmountArgs<S, "onUnmount">): any;
+  (args: OnUnmountArgs<S>): any;
 }
 
-export interface ShouldUpdateArgs<S extends State> {
+export interface ShouldUpdateArgs<S> {
   state: Readonly<S>;
   nextState: Readonly<S>;
 }
@@ -93,22 +96,40 @@ export interface ShouldUpdate<S> {
 }
 
 export interface ContainerProps<
-  S extends State,
-  ActionKeys extends Key,
-  SelectorKeys extends Key,
-  EffectKeys extends Key,
-  Keys extends Key
+  S,
+  AM extends ActionMap<S>,
+  SM extends SelectorMap<S>,
+  EM extends EffectMap<S>
 > {
   initialState: S;
-  actions?: ActionMap<S, ActionKeys>;
-  selectors?: SelectorMap<S, SelectorKeys>;
-  effects?: EffectMap<S, EffectKeys>;
+  actions?: AM;
+  selectors?: SM;
+  effects?: EM;
   context?: string;
   onMount?: OnMount<S>;
-  onUpdate?: OnUpdate<S, Keys | EventKeys>;
+  onUpdate?: OnUpdate<S, keyof SM>;
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
   children: (
-    props: { [key in keyof S]: S[key] } & { [key in Keys]: Function }
+    props: S &
+      {
+        [Key in keyof AM]: ValueOf<AM> extends (...args: infer Args) => any
+          ? (...args: Args) => void
+          : any
+      } &
+      {
+        [Key in keyof SM]: ValueOf<SM> extends (
+          ...args: infer Args
+        ) => (state: S) => infer R
+          ? (...args: Args) => R
+          : any
+      } &
+      {
+        [Key in keyof EM]: ValueOf<EM> extends (
+          ...args: infer Args
+        ) => (...args: any[]) => infer R
+          ? (...args: Args) => R
+          : any
+      }
   ) => React.ReactNode;
 }

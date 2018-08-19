@@ -11,7 +11,7 @@ import {
   ContainerProps,
   EventKeys,
   EffectArgs,
-  SetState,
+  SetStateHandler,
   StateUpdater,
   PartialState,
   SetStateCallback
@@ -115,14 +115,14 @@ class ContextContainer<
     };
   };
 
-  handleSetState: SetState<
+  handleSetState: SetStateHandler<
     S,
     ActionKeys | SelectorKeys | EffectKeys | EventKeys
   > = (updater, callback, type) => {
     const { setContextState, context, onUpdate } = this.props;
     if (!setContextState) return;
 
-    const setState: SetState<
+    const setState: SetStateHandler<
       S,
       ActionKeys | SelectorKeys | EffectKeys | EventKeys
     > = (...args) => setContextState(context, ...args);

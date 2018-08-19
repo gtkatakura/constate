@@ -1,6 +1,6 @@
 import * as React from "react";
-import Consumer from "./Consumer";
-import ContextContainer from "./ContextContainer";
+// import Consumer from "./Consumer";
+// import ContextContainer from "./ContextContainer";
 import {
   mapSetStateToActions,
   mapStateToSelectors,
@@ -9,23 +9,19 @@ import {
 } from "./utils";
 import {
   ContainerProps,
-  State,
-  Key,
-  SetState,
   EffectArgs,
-  EventKeys
+  EventKeys,
+  ActionMap,
+  SelectorMap,
+  EffectMap
 } from "./types";
 
 class Container<
-  S extends State,
-  ActionKeys extends Key,
-  SelectorKeys extends Key,
-  EffectKeys extends Key,
-  Keys extends Key = ActionKeys | SelectorKeys | EffectKeys
-> extends React.Component<
-  ContainerProps<S, ActionKeys, SelectorKeys, EffectKeys, Keys>,
-  S
-> {
+  S,
+  AM extends ActionMap<S>,
+  SM extends SelectorMap<S>,
+  EM extends EffectMap<S>
+> extends React.Component<ContainerProps<S, AM, SM, EM>, S> {
   static defaultProps = {
     initialState: {}
   };
@@ -67,7 +63,7 @@ class Container<
     ...additionalArgs
   });
 
-  handleSetState: SetState<
+  handleSetState: SetStateHandler<
     S,
     ActionKeys | SelectorKeys | EffectKeys | EventKeys
   > = (updater, callback, type) => {
@@ -89,21 +85,21 @@ class Container<
   };
 
   render() {
-    const { context } = this.props;
-    if (typeof context !== "undefined") {
-      return (
-        <Consumer>
-          {props => (
-            <ContextContainer<S, ActionKeys, SelectorKeys, EffectKeys, Keys>
-              {...props}
-              {...this.props}
-              state={{}}
-              context={context}
-            />
-          )}
-        </Consumer>
-      );
-    }
+    // const { context } = this.props;
+    // if (typeof context !== "undefined") {
+    //   return (
+    //     <Consumer>
+    //       {props => (
+    //         <ContextContainer<S, ActionKeys, SelectorKeys, EffectKeys, Keys>
+    //           {...props}
+    //           {...this.props}
+    //           state={{}}
+    //           context={context}
+    //         />
+    //       )}
+    //     </Consumer>
+    //   );
+    // }
 
     const { children, actions, selectors, effects } = this.props;
 
