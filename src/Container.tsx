@@ -1,16 +1,21 @@
 import * as React from "react";
-// import Consumer from "./Consumer";
-// import ContextContainer from "./ContextContainer";
+import Consumer from "./Consumer";
+import ContextContainer from "./ContextContainer";
 import {
   mapSetStateToActions,
   mapStateToSelectors,
-  mapArgsToEffects,
-  parseUpdater
+  parseUpdater,
+  mapPropsToEffects
 } from "./utils";
-import { ContainerProps, EventKeys } from "./types";
+import {
+  ContainerProps,
+  EventKeys,
+  EffectProps,
+  SetStateWithType
+} from "./types";
 
 class Container<
-  State = {},
+  State,
   Actions = {},
   Selectors = {},
   Effects = {}
@@ -22,18 +27,18 @@ class Container<
     initialState: {}
   };
 
-  state: S = this.props.initialState;
+  readonly state = this.props.initialState as State;
 
-  ignoreState: S | boolean = false;
+  private ignoreState: State | boolean = false;
 
   componentDidMount() {
     const { context, onMount } = this.props;
     if (!context && onMount) {
-      onMount(this.getArgs({}, "onMount"));
+      onMount(this.getEffectProps("onMount"));
     }
   }
 
-  shouldComponentUpdate(_: any, nextState: S) {
+  shouldComponentUpdate(_: any, nextState: State) {
     const { context, shouldUpdate } = this.props;
     if (!context && shouldUpdate) {
       const couldUpdate = shouldUpdate({ state: this.state, nextState });
@@ -46,70 +51,66 @@ class Container<
   componentWillUnmount() {
     const { context, onUnmount } = this.props;
     if (!context && onUnmount) {
-      onUnmount(this.getArgs({ setState: () => {} }));
+      onUnmount({
+        ...this.getEffectProps("onUnmount"),
+        setState: () => {}
+      });
     }
   }
 
-  getArgs = (
-    additionalArgs: object,
-    type?: ActionKeys | SelectorKeys | EffectKeys | EventKeys
-  ): EffectArgs<S, ActionKeys | SelectorKeys | EffectKeys | EventKeys> => ({
+  getEffectProps = (
+    type: keyof Actions | keyof Effects | EventKeys
+  ): EffectProps<State> => ({
     state: this.state,
-    setState: (u, c) => this.handleSetState(u, c, type),
-    ...additionalArgs
+    setState: (u, c) => this.handleSetState(u, c, type)
   });
 
-  handleSetState: SetStateHandler<
-    S,
-    ActionKeys | SelectorKeys | EffectKeys | EventKeys
-  > = (updater, callback, type) => {
-    let prevState: S;
+  handleSetState: SetStateWithType<State> = (
+    updater,
+    callback,
+    type: keyof Actions | keyof Effects | EventKeys
+  ) => {
+    let prevState: State;
 
     this.setState(
       state => {
         prevState = state;
-        return parseUpdater(updater, state) as Pick<S, keyof S>;
+        return parseUpdater(updater, state) as Pick<State, keyof State>;
       },
       () => {
         if (this.props.onUpdate && this.ignoreState !== this.state) {
-          // @ts-ignore
-          this.props.onUpdate(this.getArgs({ prevState, type }, "onUpdate"));
+          this.props.onUpdate({
+            ...this.getEffectProps("onUpdate"),
+            prevState,
+            type
+          });
         }
+
         if (callback) callback();
       }
     );
   };
 
   render() {
-    // const { context } = this.props;
-    // if (typeof context !== "undefined") {
-    //   return (
-    //     <Consumer>
-    //       {props => (
-    //         <ContextContainer<S, ActionKeys, SelectorKeys, EffectKeys, Keys>
-    //           {...props}
-    //           {...this.props}
-    //           state={{}}
-    //           context={context}
-    //         />
-    //       )}
-    //     </Consumer>
-    //   );
-    // }
+    if (typeof this.props.context !== "undefined") {
+      return (
+        <Consumer>
+          {props => <ContextContainer {...props} {...this.props} />}
+        </Consumer>
+      );
+    }
 
     const { children, actions, selectors, effects } = this.props;
 
-    return children(
-      Object.assign(
-        {},
-        this.state,
-        actions &&
-          mapSetStateToActions<S, ActionKeys>(this.handleSetState, actions),
-        selectors &&
-          mapStateToSelectors<S, SelectorKeys>(this.state, selectors),
-        effects && mapArgsToEffects<S, EffectKeys>(this.getArgs, effects)
-      )
+    const childrenProps = Object.assign(
+      {},
+      this.state,
+      actions && mapSetStateToActions(this.handleSetState, actions),
+      selectors && mapStateToSelectors(this.state, selectors),
+      effects && mapPropsToEffects<State, Effects>(this.getEffectProps, effects)
     );
+
+    return children(childrenProps);
   }
 }
 

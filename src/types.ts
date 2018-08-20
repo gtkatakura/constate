@@ -23,10 +23,13 @@ export interface SetState<S> {
     updaterOrState: StateUpdater<S> | Partial<S>,
     callback?: StateCallback
   ): void;
-  <K>(
+}
+
+export interface SetStateWithType<S> {
+  (
     updaterOrState: StateUpdater<S> | Partial<S>,
     callback: StateCallback | undefined,
-    type: K
+    type: any
   ): void;
 }
 
@@ -84,10 +87,10 @@ export interface ShouldUpdate<S> {
 }
 
 export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
-  initialState?: Partial<S>;
+  initialState: Partial<S>;
   actions?: ActionMap<S, AP>;
   selectors?: SelectorMap<S, SP>;
-  effects?: SelectorMap<S, EP>;
+  effects?: EffectMap<S, EP>;
   context?: string;
   onMount?: OnMount<S>;
   onUpdate?: OnUpdate<S, keyof AP | keyof EP>;

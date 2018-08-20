@@ -6,7 +6,7 @@ import {
   ValueOf,
   EffectProps,
   Dictionary,
-  SetState
+  SetStateWithType
 } from "./types";
 
 type APIMap<S, P> = ActionMap<S, P> | SelectorMap<S, P> | EffectMap<S, P>;
@@ -28,11 +28,11 @@ const mapWith = <
   );
 
 export const mapSetStateToActions = <S, P>(
-  setState: SetState<S>,
+  setState: SetStateWithType<S>,
   actionMap: ActionMap<S, P>
 ) =>
-  mapWith(actionMap, (action, key) => (...args) =>
-    setState(action(...args), undefined, key)
+  mapWith(actionMap, (action, type) => (...args) =>
+    setState(action(...args), undefined, type)
   );
 
 export const mapStateToSelectors = <S, P>(
@@ -40,15 +40,16 @@ export const mapStateToSelectors = <S, P>(
   selectorMap: SelectorMap<S, P>
 ) => mapWith(selectorMap, selector => (...args) => selector(...args)(state));
 
-export const mapArgsToEffects = <S, P>(
-  getArgs: (x: any, key: any) => EffectProps<S>,
+export const mapPropsToEffects = <S, P>(
+  getEffectProps: (type: keyof P) => EffectProps<S>,
   effectMap: EffectMap<S, P>
 ) =>
-  mapWith(effectMap, (effect, key) => (...args) =>
-    effect(...args)(getArgs(undefined, key))
+  mapWith(effectMap, (effect, type) => (...args) =>
+    effect(...args)(getEffectProps(type))
   );
 
-export const parseUpdater = <S>(
+// _ is a temporary fix for eslint parser
+export const parseUpdater = <S, _ = never>(
   updaterOrState: StateUpdater<S> | Partial<S>,
   state: S
 ) =>
