@@ -10,7 +10,7 @@ import {
 import { ContainerProps, EventKeys } from "./types";
 
 class Container<
-  State,
+  State = {},
   Actions = {},
   Selectors = {},
   Effects = {}

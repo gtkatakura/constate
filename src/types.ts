@@ -2,13 +2,11 @@ import * as React from "react";
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-export type Key = string;
-
 export type Dictionary<T> = { [key: string]: T };
 
 export type ValueOf<T> = T[keyof T];
 
-export type MapOf<K extends Key, Value> = { [key in K]: Value };
+export type MapOf<K extends string, T> = { [key in K]: T };
 
 export type EventKeys = "onMount" | "onUpdate" | "onUnmount";
 
@@ -34,11 +32,11 @@ export interface SetState<S> {
 
 export type Action<S, T> = T extends (...args: infer U) => any
   ? (...args: U) => StateUpdater<S> | Partial<S>
-  : any;
+  : (...args: unknown[]) => StateUpdater<S> | Partial<S>;
 
 export type Selector<S, T> = T extends (...args: infer U) => infer R
   ? (...args: U) => (state: Readonly<S>) => R
-  : any;
+  : (...args: unknown[]) => (state: Readonly<S>) => any;
 
 export interface EffectProps<S> {
   state: Readonly<S>;
@@ -47,7 +45,7 @@ export interface EffectProps<S> {
 
 export type Effect<S, T> = T extends (...args: infer U) => infer R
   ? (...args: U) => (props: EffectProps<S>) => R
-  : any;
+  : (...args: unknown[]) => (props: EffectProps<S>) => any;
 
 export type ActionMap<S, P> = { [K in keyof P]: Action<S, P[K]> };
 
@@ -85,21 +83,24 @@ export interface ShouldUpdate<S> {
   (props: ShouldUpdateProps<S>): boolean;
 }
 
-export interface ContainerProps<
-  State,
-  Actions,
-  Selectors,
-  Effects,
-  API = State & Actions & Selectors & Effects
-> {
-  initialState: State;
-  actions?: ActionMap<State, Actions>;
-  selectors?: SelectorMap<State, Selectors>;
-  effects?: SelectorMap<State, Effects>;
+export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
+  initialState?: Partial<S>;
+  actions?: ActionMap<S, AP>;
+  selectors?: SelectorMap<S, SP>;
+  effects?: SelectorMap<S, EP>;
   context?: string;
-  onMount?: OnMount<State>;
-  onUpdate?: OnUpdate<State, keyof Actions | keyof Effects>;
-  onUnmount?: OnUnmount<State>;
-  shouldUpdate?: ShouldUpdate<State>;
-  children: (props: API) => React.ReactNode;
+  onMount?: OnMount<S>;
+  onUpdate?: OnUpdate<S, keyof AP | keyof EP>;
+  onUnmount?: OnUnmount<S>;
+  shouldUpdate?: ShouldUpdate<S>;
+  children: (props: S & AP & SP & EP) => React.ReactNode;
+}
+
+export type ComposableContainerProps<S, AP = {}, SP = {}, EP = {}> = Omit<
+  ContainerProps<S, AP, SP, EP>,
+  "actions" | "selectors" | "effects"
+>;
+
+export interface ComposableContainer<S, AP = {}, SP = {}, EP = {}> {
+  (props: ComposableContainerProps<S, AP, SP, EP>): JSX.Element;
 }

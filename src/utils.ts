@@ -4,16 +4,16 @@ import {
   EffectMap,
   StateUpdater,
   ValueOf,
-  EffectArgs,
+  EffectProps,
   Dictionary,
-  SetState,
+  SetState
 } from "./types";
 
-type APIMap<S> = ActionMap<S> | SelectorMap<S> | EffectMap<S>;
+type APIMap<S, P> = ActionMap<S, P> | SelectorMap<S, P> | EffectMap<S, P>;
 
 const mapWith = <
   C extends (...args: any[]) => any,
-  M extends APIMap<any>,
+  M extends APIMap<any, any>,
   F extends ValueOf<M>
 >(
   map: M,
@@ -27,22 +27,22 @@ const mapWith = <
     {}
   );
 
-export const mapSetStateToActions = <S>(
+export const mapSetStateToActions = <S, P>(
   setState: SetState<S>,
-  actionMap: ActionMap<S>
+  actionMap: ActionMap<S, P>
 ) =>
   mapWith(actionMap, (action, key) => (...args) =>
     setState(action(...args), undefined, key)
   );
 
-export const mapStateToSelectors = <S>(
+export const mapStateToSelectors = <S, P>(
   state: S,
-  selectorMap: SelectorMap<S>
+  selectorMap: SelectorMap<S, P>
 ) => mapWith(selectorMap, selector => (...args) => selector(...args)(state));
 
-export const mapArgsToEffects = <S>(
-  getArgs: (x: any, key: any) => EffectArgs<S>,
-  effectMap: EffectMap<S>
+export const mapArgsToEffects = <S, P>(
+  getArgs: (x: any, key: any) => EffectProps<S>,
+  effectMap: EffectMap<S, P>
 ) =>
   mapWith(effectMap, (effect, key) => (...args) =>
     effect(...args)(getArgs(undefined, key))

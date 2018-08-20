@@ -1,40 +1,49 @@
+/* eslint-disable react/button-has-type */
 import * as React from "react";
 import Container from "./Container";
-import { Action, SelectorMap, ActionMap, ContainerProps } from "./types";
+import { SelectorMap, ActionMap, ComposableContainer } from "./types";
 
-type State = {
-  foo: boolean;
-  z: boolean | number;
-};
+interface State {
+  count: number;
+}
 
-type Actions = {
-  action1: (oi: boolean) => void;
-};
+interface Actions {
+  increment: (amount?: number) => void;
+}
 
-type Selectors = {
-  selector1: (lala: boolean) => boolean;
-};
+interface Selectors {
+  getParity: () => string;
+}
 
 const initialState: State = {
-  foo: false,
-  z: 1
+  count: 0
 };
 
-const action1: Action<State, Actions["action1"]> = oi => state => ({
-  z: state.foo
-});
+const actions: ActionMap<State, Actions> = {
+  increment: (amount = 1) => state => ({ count: state.count + amount })
+};
 
 const selectors: SelectorMap<State, Selectors> = {
-  selector1: lala => state => lala
+  getParity: () => state => (state.count % 2 === 0 ? "even" : "odd")
 };
 
-const actions: ActionMap<State, Actions> = { action1 };
-
-const Lol = <S, A, SS, E>(props: ContainerProps<S, A, SS, E>) => (
-  <Container<State & S, Actions & A, Selectors & SS, E>
+const CounterContainer: ComposableContainer<
+  State,
+  Actions,
+  Selectors
+> = props => (
+  <Container
+    initialState={{ ...initialState, ...props.initialState }}
+    actions={actions}
+    selectors={selectors}
     {...props}
-    initialState={Object.assign({}, initialState, props.initialState)}
-    actions={{ ...actions, ...(props.actions as object) }}
-    selectors={Object.assign({}, selectors, props.selectors)}
   />
+);
+
+const MyComponent = () => (
+  <CounterContainer initialState={{ count: 5 }}>
+    {({ count, increment }) => (
+      <button onClick={() => increment()}>{count}</button>
+    )}
+  </CounterContainer>
 );
