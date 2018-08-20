@@ -7,19 +7,16 @@ import {
   mapArgsToEffects,
   parseUpdater
 } from "./utils";
-import {
-  ContainerProps,
-  EffectArgs,
-  EventKeys,
-  ActionMap,
-  SelectorMap,
-  EffectMap,
-  State
-} from "./types";
+import { ContainerProps, EventKeys } from "./types";
 
-class Container<S, API extends S> extends React.Component<
-  ContainerProps<S, API>,
-  S
+class Container<
+  State,
+  Actions = {},
+  Selectors = {},
+  Effects = {}
+> extends React.Component<
+  ContainerProps<State, Actions, Selectors, Effects>,
+  State
 > {
   static defaultProps = {
     initialState: {}

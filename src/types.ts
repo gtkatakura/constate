@@ -1,5 +1,7 @@
 import * as React from "react";
 
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+
 export type Key = string;
 
 export type Dictionary<T> = { [key: string]: T };
@@ -9,14 +11,6 @@ export type ValueOf<T> = T[keyof T];
 export type MapOf<K extends Key, Value> = { [key in K]: Value };
 
 export type EventKeys = "onMount" | "onUpdate" | "onUnmount";
-
-// export interface State {
-//   [key: string]: any;
-// }
-
-// export type PartialState<S> = { [key in keyof S]?: S[key] };
-
-export type State<API> = Partial<API>;
 
 export interface StateUpdater<S> {
   (state: Readonly<S>): Partial<S>;
@@ -38,76 +32,74 @@ export interface SetState<S> {
   ): void;
 }
 
-export interface Action<S, Lol = (...args: any[]) => void> {
-  (...args: Lol extends (...args: infer U) => any ? U : any[]):
-    | StateUpdater<S>
-    | Partial<S>;
-}
+export type Action<S, T> = T extends (...args: infer U) => any
+  ? (...args: U) => StateUpdater<S> | Partial<S>
+  : any;
 
-export interface Selector<S> {
-  (...args: any[]): (state: Readonly<S>) => any;
-}
+export type Selector<S, T> = T extends (...args: infer U) => infer R
+  ? (...args: U) => (state: Readonly<S>) => R
+  : any;
 
-export interface EffectArgs<S> {
+export interface EffectProps<S> {
   state: Readonly<S>;
   setState: SetState<S>;
 }
 
-export interface Effect<S> {
-  (...args: any[]): (args: EffectArgs<S>) => any;
-}
+export type Effect<S, T> = T extends (...args: infer U) => infer R
+  ? (...args: U) => (props: EffectProps<S>) => R
+  : any;
 
-export type ActionMap<State, API> = {
-  [actionName: string]: Action<State, ValueOf<API>>;
-};
+export type ActionMap<S, P> = { [K in keyof P]: Action<S, P[K]> };
 
-export interface SelectorMap<S> {
-  [selectorName: string]: Selector<S>;
-}
+export type SelectorMap<S, P> = { [K in keyof P]: Selector<S, P[K]> };
 
-export interface EffectMap<S> {
-  [effectName: string]: Effect<S>;
-}
+export type EffectMap<S, P> = { [K in keyof P]: Effect<S, P[K]> };
 
-export interface OnMountArgs<S> extends EffectArgs<S> {}
+export interface OnMountProps<S> extends EffectProps<S> {}
 
 export interface OnMount<S> {
-  (args: OnMountArgs<S>): any;
+  (props: OnMountProps<S>): any;
 }
 
-export interface OnUpdateArgs<S, K> extends EffectArgs<S> {
+export interface OnUpdateProps<S, K> extends EffectProps<S> {
   prevState: Readonly<S>;
   type: K;
 }
 
 export interface OnUpdate<S, K> {
-  (args: OnUpdateArgs<S, K>): any;
+  (props: OnUpdateProps<S, K | EventKeys>): any;
 }
 
-export interface OnUnmountArgs<S> extends EffectArgs<S> {}
+export interface OnUnmountProps<S> extends EffectProps<S> {}
 
 export interface OnUnmount<S> {
-  (args: OnUnmountArgs<S>): any;
+  (props: OnUnmountProps<S>): any;
 }
 
-export interface ShouldUpdateArgs<S> {
+export interface ShouldUpdateProps<S> {
   state: Readonly<S>;
   nextState: Readonly<S>;
 }
 
 export interface ShouldUpdate<S> {
-  (args: ShouldUpdateArgs<S>): boolean;
+  (props: ShouldUpdateProps<S>): boolean;
 }
 
-export interface ContainerProps<State, API extends State> {
+export interface ContainerProps<
+  State,
+  Actions,
+  Selectors,
+  Effects,
+  API = State & Actions & Selectors & Effects
+> {
   initialState: State;
-  actions?: ActionMap<State, API>;
-  selectors?: SelectorMap<State>;
-  effects?: SelectorMap<State>;
+  actions?: ActionMap<State, Actions>;
+  selectors?: SelectorMap<State, Selectors>;
+  effects?: SelectorMap<State, Effects>;
   context?: string;
   onMount?: OnMount<State>;
-  onUpdate?: OnUpdate<State, Exclude<keyof API, keyof State> | EventKeys>;
+  onUpdate?: OnUpdate<State, keyof Actions | keyof Effects>;
   onUnmount?: OnUnmount<State>;
   shouldUpdate?: ShouldUpdate<State>;
-  children: (api: API) => React.ReactNode;
+  children: (props: API) => React.ReactNode;
 }
