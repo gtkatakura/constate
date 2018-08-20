@@ -28,7 +28,7 @@ const mapWith = <
   );
 
 export const mapSetStateToActions = <S, P>(
-  setState: SetStateWithType<S>,
+  setState: SetStateWithType<S, keyof P>,
   actionMap: ActionMap<S, P>
 ) =>
   mapWith(actionMap, (action, type) => (...args) =>

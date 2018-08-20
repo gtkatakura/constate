@@ -41,7 +41,7 @@ const CounterContainer: ComposableContainer<
 );
 
 const MyComponent = () => (
-  <CounterContainer initialState={{ count: 5 }}>
+  <CounterContainer initialState={{ count: 5 }} onUpdate={({ type }) => {}}>
     {({ count, increment }) => (
       <button onClick={() => increment()}>{count}</button>
     )}

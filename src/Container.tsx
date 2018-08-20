@@ -65,11 +65,10 @@ class Container<
     setState: (u, c) => this.handleSetState(u, c, type)
   });
 
-  handleSetState: SetStateWithType<State> = (
-    updater,
-    callback,
-    type: keyof Actions | keyof Effects | EventKeys
-  ) => {
+  handleSetState: SetStateWithType<
+    State,
+    keyof Actions | keyof Effects | EventKeys
+  > = (updater, callback, type) => {
     let prevState: State;
 
     this.setState(
@@ -95,7 +94,13 @@ class Container<
     if (typeof this.props.context !== "undefined") {
       return (
         <Consumer>
-          {props => <ContextContainer {...props} {...this.props} />}
+          {props => (
+            <ContextContainer
+              {...props}
+              {...this.props}
+              context={this.props.context!}
+            />
+          )}
         </Consumer>
       );
     }

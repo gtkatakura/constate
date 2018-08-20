@@ -1,5 +1,9 @@
 import * as React from "react";
 
-const Context = React.createContext<{}>({});
+export interface ContextValue {
+  state: {};
+}
+
+const Context = React.createContext<ContextValue>({ state: {} });
 
 export default Context;

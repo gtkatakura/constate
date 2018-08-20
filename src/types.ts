@@ -25,11 +25,11 @@ export interface SetState<S> {
   ): void;
 }
 
-export interface SetStateWithType<S> {
+export interface SetStateWithType<S, K> {
   (
     updaterOrState: StateUpdater<S> | Partial<S>,
     callback: StateCallback | undefined,
-    type: any
+    type: K
   ): void;
 }
 
