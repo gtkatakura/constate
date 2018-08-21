@@ -7,6 +7,6 @@ module.exports = {
   moduleFileExtensions: [...defaults.moduleFileExtensions, "ts", "tsx"],
   transform: {
     // (.js, .ts, .jsx, .tsx) files
-    "^.+\\.(j|t)sx?$": "babel-jest"
+    "\\.(j|t)sx?$": "babel-jest"
   }
 };

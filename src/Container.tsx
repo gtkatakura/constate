@@ -136,13 +136,13 @@ class InnerContainer<
   };
 
   render() {
-    const { children, actions, selectors, effects } = this.props;
+    const { state, children, actions, selectors, effects } = this.props;
 
     const childrenProps = Object.assign(
       {},
-      this.state,
+      state || this.state,
       actions && mapSetStateToActions(this.handleSetState, actions),
-      selectors && mapStateToSelectors(this.state, selectors),
+      selectors && mapStateToSelectors(state || this.state, selectors),
       effects && mapPropsToEffects<State, Effects>(this.getEffectProps, effects)
     );
 

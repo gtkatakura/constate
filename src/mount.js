@@ -1,8 +1,9 @@
 /* eslint-disable no-param-reassign, no-use-before-define, no-unused-expressions */
-import React from "react";
+import * as React from "react";
 import {
   mapSetStateToActions,
-  mapArgumentToFunctions,
+  mapStateToSelectors,
+  mapPropsToEffects,
   parseUpdater
 } from "./utils";
 
@@ -59,23 +60,22 @@ const mount = Container => {
     }
 
     if (onUpdate && couldUpdate) {
-      onUpdate(getArgs({ prevState, type }, "onUpdate"));
+      onUpdate({ ...getArgs("onUpdate"), prevState, type });
     }
 
     if (callback) callback();
   };
 
-  const getArgs = (additionalArgs, type) => ({
+  const getArgs = type => ({
     state,
-    setState: (u, c) => setState(u, c, type),
-    ...additionalArgs
+    setState: (u, c) => setState(u, c, type)
   });
 
-  typeof onMount === "function" && onMount(getArgs({}, "onMount"));
+  typeof onMount === "function" && onMount(getArgs("onMount"));
 
   actions && mapToDraft(mapSetStateToActions(setState, actions), state);
-  selectors && mapToDraft(mapArgumentToFunctions(state, selectors), state);
-  effects && mapToDraft(mapArgumentToFunctions(getArgs, effects), state);
+  selectors && mapToDraft(mapStateToSelectors(state, selectors), state);
+  effects && mapToDraft(mapPropsToEffects(getArgs, effects), state);
 
   return state;
 };
