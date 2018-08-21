@@ -8,7 +8,7 @@ export type ValueOf<T> = T[keyof T];
 
 export type MapOf<K extends string, T> = { [key in K]: T };
 
-export type EventKeys = "onMount" | "onUpdate" | "onUnmount";
+export type EventKeys = "onMount" | "onUpdate" | "onUnmount" | "initialState";
 
 export type StateUpdater<S> = (state: Readonly<S>) => Partial<S>;
 
@@ -34,24 +34,15 @@ export type SetStateWithType<S, K> = (
 /**
  * A function passed by `Provider` to `ContextContainer` to be used as a
  * contextual `setState`
- * @template S Global state
- * @template C Context key in the state
+ * @template S State
  * @template K Possible values of the `type` argument
  */
-export type SetContextState<S, C extends keyof S, K> = (
-  context: C,
-  updaterOrState: StateUpdater<S[C]> | Partial<S[C]>,
+export type SetContextState<S, K> = (
+  context: string,
+  updaterOrState: StateUpdater<S> | Partial<S>,
   callback?: StateCallback,
   type?: K
 ) => void;
-
-/**
- * Mount a container on a given context C
- * @template C Possible context values
- */
-export interface MountContainer<C> {
-  (context: C, onMount?: () => void): (onUnmount?: () => void) => void;
-}
 
 /**
  * Action implementation based on public action T
@@ -177,14 +168,15 @@ export interface ShouldUpdate<S> {
 /**
  * `Container` props
  * @template S State
- * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export interface ContainerProps<S, C, AP = {}, SP = {}, EP = {}> {
+export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
   initialState: Partial<S>;
-  context?: C;
+  context?: string;
+  state?: S;
+  setState?: SetStateWithType<S, keyof AP | keyof EP | EventKeys>;
   actions?: ActionMap<S, AP>;
   selectors?: SelectorMap<S, SP>;
   effects?: EffectMap<S, EP>;
@@ -192,31 +184,30 @@ export interface ContainerProps<S, C, AP = {}, SP = {}, EP = {}> {
   onUpdate?: OnUpdate<S, keyof AP | keyof EP>;
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
+  mountContainer?: (onMount?: () => void) => (onUnmount?: () => void) => void;
   children: (props: S & AP & SP & EP) => React.ReactNode;
 }
 
 /**
  * Props for composable container components
  * @template S State
- * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export type ComposableContainerProps<S, C, AP = {}, SP = {}, EP = {}> = Omit<
-  ContainerProps<S, C, AP, SP, EP>,
-  "actions" | "selectors" | "effects"
+export type ComposableContainerProps<S, AP = {}, SP = {}, EP = {}> = Omit<
+  ContainerProps<S, AP, SP, EP>,
+  "actions" | "selectors" | "effects" | "state" | "setState" | "mountContainer"
 >;
 
 /**
  * A composable container is a component that renders `Container` without
  * `children` and receives props
  * @template S State
- * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export interface ComposableContainer<S, C, AP = {}, SP = {}, EP = {}> {
-  (props: ComposableContainerProps<S, C, AP, SP, EP>): JSX.Element;
+export interface ComposableContainer<S, AP = {}, SP = {}, EP = {}> {
+  (props: ComposableContainerProps<S, AP, SP, EP>): JSX.Element;
 }

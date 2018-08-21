@@ -2,10 +2,12 @@ import * as React from "react";
 import { StateUpdater, StateCallback } from "./types";
 
 interface ContextState {
-  state: {};
-  setContextState: <S, C extends keyof S, K>(
-    context: C,
-    updaterOrState: StateUpdater<S[C]> | Partial<S[C]>,
+  state: {
+    [key: string]: any;
+  };
+  setContextState: <S, K>(
+    context: string,
+    updaterOrState: StateUpdater<S> | Partial<S>,
     callback?: StateCallback,
     type?: K
   ) => void;

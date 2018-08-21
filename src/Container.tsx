@@ -1,6 +1,5 @@
 import * as React from "react";
 import Consumer from "./Consumer";
-import ContextContainer from "./ContextContainer";
 import {
   mapSetStateToActions,
   mapStateToSelectors,
@@ -12,17 +11,16 @@ import {
   EventKeys,
   EffectProps,
   SetStateWithType,
-  EffectMap
+  StateUpdater
 } from "./types";
 
 class Container<
   State,
-  C extends string | number | symbol,
   Actions = {},
   Selectors = {},
   Effects = {}
 > extends React.Component<
-  ContainerProps<State, C, Actions, Selectors, Effects>,
+  ContainerProps<State, Actions, Selectors, Effects>,
   State
 > {
   static defaultProps = {
@@ -33,37 +31,69 @@ class Container<
 
   private ignoreState: State | boolean = false;
 
-  componentDidMount() {
-    const { context, onMount } = this.props;
-    if (!context && onMount) {
-      onMount(this.getEffectProps("onMount"));
+  private unmount?: (onUnmount: () => void) => void = undefined;
+
+  constructor(props: ContainerProps<State, Actions, Selectors, Effects>) {
+    super(props);
+    const { state, setState, initialState } = props;
+    if (setState && !state) {
+      setState(
+        currentState => Object.assign({}, initialState, currentState),
+        undefined,
+        "initialState"
+      );
     }
   }
 
-  shouldComponentUpdate(_: any, nextState: State) {
-    const { context, shouldUpdate } = this.props;
-    if (!context && shouldUpdate) {
-      const couldUpdate = shouldUpdate({ state: this.state, nextState });
-      this.ignoreState = !couldUpdate && nextState;
-      return couldUpdate;
+  componentDidMount() {
+    const { mountContainer, onMount, context } = this.props;
+    const mount = () => onMount && onMount(this.getEffectProps("onMount"));
+
+    if (mountContainer) {
+      this.unmount = mountContainer(mount);
+    } else if (!context) {
+      mount();
     }
-    return true;
+  }
+
+  shouldComponentUpdate(
+    nextProps: ContainerProps<State, Actions, Selectors, Effects>,
+    nextState: State
+  ) {
+    const { state: stateFromProps } = this.props;
+    const { state: nextStateFromProps, shouldUpdate, context } = nextProps;
+    let couldUpdate = true;
+
+    if (stateFromProps && nextStateFromProps && shouldUpdate) {
+      couldUpdate = shouldUpdate({
+        state: stateFromProps,
+        nextState: nextStateFromProps
+      });
+      this.ignoreState = !couldUpdate && nextStateFromProps;
+    } else if (!context && shouldUpdate) {
+      couldUpdate = shouldUpdate({ state: this.state, nextState });
+      this.ignoreState = !couldUpdate && nextState;
+    }
+
+    return couldUpdate;
   }
 
   componentWillUnmount() {
     const { context, onUnmount } = this.props;
-    if (!context && onUnmount) {
-      onUnmount({
-        ...this.getEffectProps("onUnmount"),
-        setState: () => {}
-      });
+    const unmount = () =>
+      onUnmount && onUnmount(this.getEffectProps("onUnmount"));
+
+    if (this.unmount) {
+      this.unmount(unmount);
+    } else if (!context) {
+      unmount();
     }
   }
 
   getEffectProps = (
     type: keyof Actions | keyof Effects | EventKeys
   ): EffectProps<State> => ({
-    state: this.state,
+    state: this.props.state || this.state,
     setState: (u, c) => this.handleSetState(u, c, type)
   });
 
@@ -73,47 +103,51 @@ class Container<
   > = (updater, callback, type) => {
     let prevState: State;
 
-    this.setState(
-      state => {
-        prevState = state;
-        return parseUpdater(updater, state) as Pick<State, keyof State>;
-      },
-      () => {
-        if (this.props.onUpdate && this.ignoreState !== this.state) {
-          this.props.onUpdate({
-            ...this.getEffectProps("onUpdate"),
-            prevState,
-            type
-          });
-        }
+    const updaterFn: StateUpdater<State> = state => {
+      prevState = state;
+      return parseUpdater(updater, state);
+    };
 
-        if (callback) callback();
+    const callbackFn = () => {
+      const { state = this.state, onUpdate } = this.props;
+      if (onUpdate && this.ignoreState !== state) {
+        onUpdate({
+          ...this.getEffectProps("onUpdate"),
+          prevState,
+          type
+        });
       }
-    );
+
+      if (callback) callback();
+    };
+
+    if (this.props.setState) {
+      this.props.setState(updaterFn, callbackFn, type);
+    } else {
+      // @ts-ignore
+      this.setState(updaterFn, callbackFn);
+    }
   };
 
   render() {
-    const { context, children, actions, selectors, effects } = this.props;
+    const { context, ...props } = this.props;
 
     if (typeof context !== "undefined") {
       return (
         <Consumer>
-          {({ state, setContextState, mountContainer }) => {
-            const st = state as { [Key in C]: State };
-            return (
-              <ContextContainer
-                {...this.props}
-                state={st}
-                context={context}
-                setContextState={setContextState}
-                mountContainer={mountContainer}
-                effects={effects as EffectMap<typeof st[C], Effects>}
-              />
-            );
-          }}
+          {({ state, setContextState, mountContainer }) => (
+            <Container
+              {...props}
+              state={state[context]}
+              setState={(...args) => setContextState(context, ...args)}
+              mountContainer={(...args) => mountContainer(context, ...args)}
+            />
+          )}
         </Consumer>
       );
     }
+
+    const { children, actions, selectors, effects } = props;
 
     const childrenProps = Object.assign(
       {},
