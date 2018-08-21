@@ -8,50 +8,48 @@ import {
 import {
   ContainerProps,
   EventKeys,
-  StateUpdater,
   EffectProps,
   SetStateWithType,
-  StateCallback
+  MountContainer,
+  SetContextState,
+  Omit
 } from "./types";
 
-interface ContextContainerProps<State> {
-  context: string;
-  state: {
-    [key: string]: State;
-  };
-  mountContainer?: (
-    context: string,
-    onMount?: Function
-  ) => (onUnmount: Function) => void;
-  setContextState?: (
-    context: string,
-    updater: StateUpdater<State> | Partial<State>,
-    callback?: StateCallback,
-    type?: any
-  ) => void;
+interface ContextContainerProps<S, C extends keyof S, A, E> {
+  state: S;
+  context: C;
+  mountContainer: MountContainer<C>;
+  setContextState: SetContextState<
+    S,
+    C,
+    keyof A | keyof E | EventKeys | "initialState"
+  >;
 }
 
 class ContextContainer<
   State,
+  C extends keyof State,
   Actions = {},
   Selectors = {},
   Effects = {}
 > extends React.Component<
-  ContainerProps<State, Actions, Selectors, Effects> &
-    ContextContainerProps<State>,
-  State
+  Omit<ContainerProps<State[C], C, Actions, Selectors, Effects>, "context"> &
+    ContextContainerProps<State, C, Actions, Effects>
 > {
-  private ignoreState: State | boolean = false;
+  private ignoreState: State[C] | boolean = false;
 
   private unmount?: Function = undefined;
 
   constructor(
-    props: ContainerProps<State, Actions, Selectors, Effects> &
-      ContextContainerProps<State>
+    props: Omit<
+      ContainerProps<State[C], C, Actions, Selectors, Effects>,
+      "context"
+    > &
+      ContextContainerProps<State, C, Actions, Effects>
   ) {
     super(props);
     const { state, setContextState, context, initialState } = props;
-    if (!state[context] && setContextState) {
+    if (!state[context]) {
       setContextState(
         context,
         currentState => ({
@@ -66,17 +64,18 @@ class ContextContainer<
 
   componentDidMount() {
     const { mountContainer, context, onMount } = this.props;
-    if (mountContainer) {
-      this.unmount = mountContainer(
-        context,
-        onMount && (() => onMount(this.getEffectProps("onMount")))
-      );
-    }
+    this.unmount = mountContainer(
+      context,
+      onMount && (() => onMount(this.getEffectProps("onMount")))
+    );
   }
 
   shouldComponentUpdate(
-    nextProps: ContainerProps<State, Actions, Selectors, Effects> &
-      ContextContainerProps<State>
+    nextProps: Omit<
+      ContainerProps<State[C], C, Actions, Selectors, Effects>,
+      "context"
+    > &
+      ContextContainerProps<State, C, Actions, Effects>
   ) {
     const { state } = this.props;
     const { context, shouldUpdate, state: nextState } = nextProps;
@@ -102,7 +101,7 @@ class ContextContainer<
 
   getEffectProps = (
     type: keyof Actions | keyof Effects | EventKeys
-  ): EffectProps<State> => {
+  ): EffectProps<State[C]> => {
     const { state, context } = this.props;
     return {
       state: state[context],
@@ -111,16 +110,16 @@ class ContextContainer<
   };
 
   handleSetState: SetStateWithType<
-    State,
+    State[C],
     keyof Actions | keyof Effects | EventKeys
   > = (updater, callback, type) => {
     const { setContextState, context, onUpdate } = this.props;
     if (!setContextState) return;
 
-    const setState: SetStateWithType<State, typeof type> = (...args) =>
+    const setState: SetStateWithType<State[C], typeof type> = (...args) =>
       setContextState(context, ...args);
 
-    let prevState: State;
+    let prevState: Readonly<State[C]>;
 
     setState(
       state => {
@@ -150,7 +149,8 @@ class ContextContainer<
       state,
       actions && mapSetStateToActions(this.handleSetState, actions),
       selectors && mapStateToSelectors(state, selectors),
-      effects && mapPropsToEffects<State, Effects>(this.getEffectProps, effects)
+      effects &&
+        mapPropsToEffects<State[C], Effects>(this.getEffectProps, effects)
     );
 
     return children(childrenProps);

@@ -7,12 +7,12 @@ import { SetContextState, StateUpdater, StateCallback } from "./types";
 const reduxDevtoolsExtension =
   typeof window !== "undefined" && window.__REDUX_DEVTOOLS_EXTENSION__;
 
-interface OnMountProps<S, C extends keyof S, K extends string> {
+interface OnMountProps<S, C extends keyof S, K> {
   state: S;
   setContextState: SetContextState<S, C, K>;
 }
 
-interface OnUpdateProps<S, C extends keyof S, K extends string> {
+interface OnUpdateProps<S, C extends keyof S, K> {
   prevState: S;
   state: S;
   setContextState: SetContextState<S, C, K>;
@@ -24,7 +24,7 @@ interface OnUnmountProps<S> {
   state: S;
 }
 
-interface ProviderProps<S, C extends keyof S, K extends string> {
+interface ProviderProps<S, C extends keyof S, K> {
   initialState?: Partial<S>;
   devtools?: boolean;
   onMount?: (props: OnMountProps<S, C, K>) => void;
@@ -37,7 +37,7 @@ type MountContainer<C> = (
   onMount?: () => void
 ) => (onUnmount?: () => void) => void;
 
-interface ProviderState<S, C extends keyof S, K extends string> {
+interface ProviderState<S, C extends keyof S, K> {
   state: S;
   setContextState: SetContextState<S, C, K>;
   mountContainer: MountContainer<C>;
@@ -45,11 +45,7 @@ interface ProviderState<S, C extends keyof S, K extends string> {
 
 type Containers<S> = { [Key in keyof S]?: number };
 
-class Provider<
-  State,
-  C extends keyof State,
-  K extends string
-> extends React.Component<
+class Provider<State, C extends keyof State, K> extends React.Component<
   ProviderProps<State, C, K>,
   ProviderState<State, C, K>
 > {

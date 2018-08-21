@@ -11,16 +11,18 @@ import {
   ContainerProps,
   EventKeys,
   EffectProps,
-  SetStateWithType
+  SetStateWithType,
+  EffectMap
 } from "./types";
 
 class Container<
   State,
+  C extends string | number | symbol,
   Actions = {},
   Selectors = {},
   Effects = {}
 > extends React.Component<
-  ContainerProps<State, Actions, Selectors, Effects>,
+  ContainerProps<State, C, Actions, Selectors, Effects>,
   State
 > {
   static defaultProps = {
@@ -91,21 +93,27 @@ class Container<
   };
 
   render() {
-    if (typeof this.props.context !== "undefined") {
+    const { context, children, actions, selectors, effects } = this.props;
+
+    if (typeof context !== "undefined") {
       return (
         <Consumer>
-          {props => (
-            <ContextContainer
-              {...props}
-              {...this.props}
-              context={this.props.context!}
-            />
-          )}
+          {({ state, setContextState, mountContainer }) => {
+            const st = state as { [Key in C]: State };
+            return (
+              <ContextContainer
+                {...this.props}
+                state={st}
+                context={context}
+                setContextState={setContextState}
+                mountContainer={mountContainer}
+                effects={effects as EffectMap<typeof st[C], Effects>}
+              />
+            );
+          }}
         </Consumer>
       );
     }
-
-    const { children, actions, selectors, effects } = this.props;
 
     const childrenProps = Object.assign(
       {},

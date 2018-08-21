@@ -38,12 +38,20 @@ export type SetStateWithType<S, K> = (
  * @template C Context key in the state
  * @template K Possible values of the `type` argument
  */
-export type SetContextState<S, C extends keyof S, K extends string> = (
+export type SetContextState<S, C extends keyof S, K> = (
   context: C,
   updaterOrState: StateUpdater<S[C]> | Partial<S[C]>,
   callback?: StateCallback,
   type?: K
 ) => void;
+
+/**
+ * Mount a container on a given context C
+ * @template C Possible context values
+ */
+export interface MountContainer<C> {
+  (context: C, onMount?: () => void): (onUnmount?: () => void) => void;
+}
 
 /**
  * Action implementation based on public action T
@@ -169,16 +177,17 @@ export interface ShouldUpdate<S> {
 /**
  * `Container` props
  * @template S State
+ * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
+export interface ContainerProps<S, C, AP = {}, SP = {}, EP = {}> {
   initialState: Partial<S>;
+  context?: C;
   actions?: ActionMap<S, AP>;
   selectors?: SelectorMap<S, SP>;
   effects?: EffectMap<S, EP>;
-  context?: string;
   onMount?: OnMount<S>;
   onUpdate?: OnUpdate<S, keyof AP | keyof EP>;
   onUnmount?: OnUnmount<S>;
@@ -189,12 +198,13 @@ export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
 /**
  * Props for composable container components
  * @template S State
+ * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export type ComposableContainerProps<S, AP = {}, SP = {}, EP = {}> = Omit<
-  ContainerProps<S, AP, SP, EP>,
+export type ComposableContainerProps<S, C, AP = {}, SP = {}, EP = {}> = Omit<
+  ContainerProps<S, C, AP, SP, EP>,
   "actions" | "selectors" | "effects"
 >;
 
@@ -202,10 +212,11 @@ export type ComposableContainerProps<S, AP = {}, SP = {}, EP = {}> = Omit<
  * A composable container is a component that renders `Container` without
  * `children` and receives props
  * @template S State
+ * @template C Possible values of context
  * @template AP Map of actions to be passed to the children function
  * @template SP Map of selectors to be passed to the children function
  * @template EP Map of effects to be passed to the children function
  */
-export interface ComposableContainer<S, AP = {}, SP = {}, EP = {}> {
-  (props: ComposableContainerProps<S, AP, SP, EP>): JSX.Element;
+export interface ComposableContainer<S, C, AP = {}, SP = {}, EP = {}> {
+  (props: ComposableContainerProps<S, C, AP, SP, EP>): JSX.Element;
 }

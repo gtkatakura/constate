@@ -30,6 +30,7 @@ const selectors: SelectorMap<State, Selectors> = {
 
 const CounterContainer: ComposableContainer<
   State,
+  C,
   Actions,
   Selectors
 > = props => (
@@ -44,7 +45,7 @@ const CounterContainer: ComposableContainer<
 const MyComponent = () => (
   <Provider
     initialState={{ lol: { haha: "b" } }}
-    onUpdate={props => props.setContextState("cacete")}
+    onUpdate={props => props.setContextState("cacete", {})}
   >
     <CounterContainer
       initialState={{ count: 5 }}
