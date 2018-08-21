@@ -20,6 +20,7 @@
     "stripInternal": true
   },
   "include": [
-    "src"
+    "src",
+    "types"
   ]
 }

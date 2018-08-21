@@ -2,6 +2,7 @@
 import * as React from "react";
 import Container from "./Container";
 import { SelectorMap, ActionMap, ComposableContainer } from "./types";
+import Provider from "./Provider";
 
 interface State {
   count: number;
@@ -41,9 +42,18 @@ const CounterContainer: ComposableContainer<
 );
 
 const MyComponent = () => (
-  <CounterContainer initialState={{ count: 5 }} onUpdate={({ type }) => {}}>
-    {({ count, increment }) => (
-      <button onClick={() => increment()}>{count}</button>
-    )}
-  </CounterContainer>
+  <Provider
+    initialState={{ lol: { haha: "b" } }}
+    onUpdate={props => props.setContextState("cacete")}
+  >
+    <CounterContainer
+      initialState={{ count: 5 }}
+      onUpdate={({ type }) => {}}
+      context="cacete"
+    >
+      {({ count, increment }) => (
+        <button onClick={() => increment()}>{count}</button>
+      )}
+    </CounterContainer>
+  </Provider>
 );

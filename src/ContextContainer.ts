@@ -9,9 +9,9 @@ import {
   ContainerProps,
   EventKeys,
   StateUpdater,
-  StateCallback,
   EffectProps,
-  SetStateWithType
+  SetStateWithType,
+  StateCallback
 } from "./types";
 
 interface ContextContainerProps<State> {
