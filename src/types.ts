@@ -166,6 +166,14 @@ export interface ShouldUpdate<S> {
 }
 
 /**
+ * Mounts a container and returns a function to unmount it.
+ */
+export type MountContainer = (
+  context: string,
+  onMount?: () => void
+) => (onUnmount?: () => void) => void;
+
+/**
  * `Container` props
  * @template S State
  * @template AP Map of actions to be passed to the children function
@@ -175,8 +183,6 @@ export interface ShouldUpdate<S> {
 export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
   initialState: Partial<S>;
   context?: string;
-  state?: S;
-  setState?: SetStateWithType<S, keyof AP | keyof EP | EventKeys>;
   actions?: ActionMap<S, AP>;
   selectors?: SelectorMap<S, SP>;
   effects?: EffectMap<S, EP>;
@@ -184,8 +190,21 @@ export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
   onUpdate?: OnUpdate<S, keyof AP | keyof EP>;
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
-  mountContainer?: (onMount?: () => void) => (onUnmount?: () => void) => void;
   children: (props: S & AP & SP & EP) => React.ReactNode;
+}
+
+/**
+ * `InnerContainer` props
+ * @template S State
+ * @template AP Map of actions to be passed to the children function
+ * @template SP Map of selectors to be passed to the children function
+ * @template EP Map of effects to be passed to the children function
+ */
+export interface InnerContainerProps<S, AP = {}, SP = {}, EP = {}>
+  extends ContainerProps<S, AP, SP, EP> {
+  state?: S;
+  setContextState?: SetContextState<S, keyof AP | keyof EP | EventKeys>;
+  mountContainer?: MountContainer;
 }
 
 /**
@@ -197,7 +216,7 @@ export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
  */
 export type ComposableContainerProps<S, AP = {}, SP = {}, EP = {}> = Omit<
   ContainerProps<S, AP, SP, EP>,
-  "actions" | "selectors" | "effects" | "state" | "setState" | "mountContainer"
+  "actions" | "selectors" | "effects"
 >;
 
 /**

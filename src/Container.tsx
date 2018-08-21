@@ -11,16 +11,17 @@ import {
   EventKeys,
   EffectProps,
   SetStateWithType,
-  StateUpdater
+  StateUpdater,
+  InnerContainerProps
 } from "./types";
 
-class Container<
+class InnerContainer<
   State,
   Actions = {},
   Selectors = {},
   Effects = {}
 > extends React.Component<
-  ContainerProps<State, Actions, Selectors, Effects>,
+  InnerContainerProps<State, Actions, Selectors, Effects>,
   State
 > {
   static defaultProps = {
@@ -33,11 +34,12 @@ class Container<
 
   private unmount?: (onUnmount: () => void) => void = undefined;
 
-  constructor(props: ContainerProps<State, Actions, Selectors, Effects>) {
+  constructor(props: InnerContainerProps<State, Actions, Selectors, Effects>) {
     super(props);
-    const { state, setState, initialState } = props;
-    if (setState && !state) {
-      setState(
+    const { context, setContextState, state, initialState } = props;
+    if (context && setContextState && !state) {
+      setContextState(
+        context,
         currentState => Object.assign({}, initialState, currentState),
         undefined,
         "initialState"
@@ -46,25 +48,25 @@ class Container<
   }
 
   componentDidMount() {
-    const { mountContainer, onMount, context } = this.props;
+    const { context, mountContainer, onMount } = this.props;
     const mount = () => onMount && onMount(this.getEffectProps("onMount"));
 
-    if (mountContainer) {
-      this.unmount = mountContainer(mount);
+    if (context && mountContainer) {
+      this.unmount = mountContainer(context, mount);
     } else if (!context) {
       mount();
     }
   }
 
   shouldComponentUpdate(
-    nextProps: ContainerProps<State, Actions, Selectors, Effects>,
+    nextProps: InnerContainerProps<State, Actions, Selectors, Effects>,
     nextState: State
   ) {
-    const { state: stateFromProps } = this.props;
-    const { state: nextStateFromProps, shouldUpdate, context } = nextProps;
+    const { context, state: stateFromProps } = this.props;
+    const { state: nextStateFromProps, shouldUpdate } = nextProps;
     let couldUpdate = true;
 
-    if (stateFromProps && nextStateFromProps && shouldUpdate) {
+    if (context && stateFromProps && nextStateFromProps && shouldUpdate) {
       couldUpdate = shouldUpdate({
         state: stateFromProps,
         nextState: nextStateFromProps
@@ -92,15 +94,19 @@ class Container<
 
   getEffectProps = (
     type: keyof Actions | keyof Effects | EventKeys
-  ): EffectProps<State> => ({
-    state: this.props.state || this.state,
-    setState: (u, c) => this.handleSetState(u, c, type)
-  });
+  ): EffectProps<State> => {
+    const { context, state } = this.props;
+    return {
+      state: context && state ? state : this.state,
+      setState: (u, c) => this.handleSetState(u, c, type)
+    };
+  };
 
   handleSetState: SetStateWithType<
     State,
     keyof Actions | keyof Effects | EventKeys
   > = (updater, callback, type) => {
+    const { context, setContextState } = this.props;
     let prevState: State;
 
     const updaterFn: StateUpdater<State> = state => {
@@ -121,8 +127,8 @@ class Container<
       if (callback) callback();
     };
 
-    if (this.props.setState) {
-      this.props.setState(updaterFn, callbackFn, type);
+    if (context && setContextState) {
+      setContextState(context, updaterFn, callbackFn, type);
     } else {
       // @ts-ignore
       this.setState(updaterFn, callbackFn);
@@ -130,24 +136,7 @@ class Container<
   };
 
   render() {
-    const { context, ...props } = this.props;
-
-    if (typeof context !== "undefined") {
-      return (
-        <Consumer>
-          {({ state, setContextState, mountContainer }) => (
-            <Container
-              {...props}
-              state={state[context]}
-              setState={(...args) => setContextState(context, ...args)}
-              mountContainer={(...args) => mountContainer(context, ...args)}
-            />
-          )}
-        </Consumer>
-      );
-    }
-
-    const { children, actions, selectors, effects } = props;
+    const { children, actions, selectors, effects } = this.props;
 
     const childrenProps = Object.assign(
       {},
@@ -158,6 +147,33 @@ class Container<
     );
 
     return children(childrenProps);
+  }
+}
+
+// eslint-disable-next-line react/prefer-stateless-function, react/no-multi-comp
+class Container<
+  State,
+  Actions = {},
+  Selectors = {},
+  Effects = {}
+> extends React.Component<ContainerProps<State, Actions, Selectors, Effects>> {
+  render() {
+    const { context } = this.props;
+    if (typeof context !== "undefined") {
+      return (
+        <Consumer>
+          {({ state, setContextState, mountContainer }) => (
+            <InnerContainer
+              {...this.props}
+              state={state[context]}
+              setContextState={setContextState}
+              mountContainer={mountContainer}
+            />
+          )}
+        </Consumer>
+      );
+    }
+    return <InnerContainer {...this.props} />;
   }
 }
 

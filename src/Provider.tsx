@@ -2,62 +2,60 @@
 import * as React from "react";
 import Context from "./Context";
 import { parseUpdater } from "./utils";
-import { SetContextState, StateUpdater, StateCallback } from "./types";
+import {
+  StateUpdater,
+  StateCallback,
+  MountContainer,
+  SetContextState
+} from "./types";
 
 const reduxDevtoolsExtension =
   typeof window !== "undefined" && window.__REDUX_DEVTOOLS_EXTENSION__;
 
-interface OnMountProps<S, C extends keyof S, K> {
+interface OnMountProps<S> {
   state: S;
-  setContextState: SetContextState<S, C, K>;
+  setContextState: SetContextState<S, string>;
 }
 
-interface OnUpdateProps<S, C extends keyof S, K> {
+interface OnUpdateProps<S> {
   prevState: S;
   state: S;
-  setContextState: SetContextState<S, C, K>;
-  context: C;
-  type: K;
+  setContextState: SetContextState<S, string>;
+  context: string;
+  type?: string;
 }
 
 interface OnUnmountProps<S> {
   state: S;
 }
 
-interface ProviderProps<S, C extends keyof S, K> {
-  initialState?: Partial<S>;
+interface ProviderProps<S> {
+  initialState: Partial<S>;
   devtools?: boolean;
-  onMount?: (props: OnMountProps<S, C, K>) => void;
-  onUpdate?: (props: OnUpdateProps<S, C, K>) => void;
+  onMount?: (props: OnMountProps<S>) => void;
+  onUpdate?: (props: OnUpdateProps<S>) => void;
   onUnmount?: (props: OnUnmountProps<S>) => void;
 }
 
-type MountContainer<C> = (
-  context: C,
-  onMount?: () => void
-) => (onUnmount?: () => void) => void;
-
-interface ProviderState<S, C extends keyof S, K> {
+interface ProviderState<S> {
   state: S;
-  setContextState: SetContextState<S, C, K>;
-  mountContainer: MountContainer<C>;
+  setContextState: SetContextState<S, string>;
+  mountContainer: MountContainer;
 }
 
-type Containers<S> = { [Key in keyof S]?: number };
-
-class Provider<State, C extends keyof State, K> extends React.Component<
-  ProviderProps<State, C, K>,
-  ProviderState<State, C, K>
+class Provider<State extends { [key: string]: any }> extends React.Component<
+  ProviderProps<State>,
+  ProviderState<State>
 > {
   static defaultProps = {
     initialState: {}
   };
 
-  private containers: Containers<State> = {};
+  private containers: { [key: string]: number } = {};
 
   private devtools?: ReturnType<ReduxDevtoolsExtension["connect"]>;
 
-  constructor(props: ProviderProps<State, C, K>) {
+  constructor(props: ProviderProps<State>) {
     super(props);
     const { devtools, initialState } = props;
 
@@ -99,7 +97,7 @@ class Provider<State, C extends keyof State, K> extends React.Component<
     }
   }
 
-  mountContainer: MountContainer<C> = (context, onMount) => {
+  mountContainer: MountContainer = (context, onMount) => {
     if (!this.containers[context]) {
       this.containers[context] = 0;
       if (onMount) this.setState(null, onMount);
@@ -112,7 +110,7 @@ class Provider<State, C extends keyof State, K> extends React.Component<
     };
   };
 
-  setContextState: SetContextState<State, C, K> = (
+  setContextState: SetContextState<State, string> = (
     context,
     updater,
     callback,
@@ -120,7 +118,7 @@ class Provider<State, C extends keyof State, K> extends React.Component<
   ) => {
     let prevState: State;
 
-    const updaterFn: StateUpdater<ProviderState<State, C, K>> = state => {
+    const updaterFn: StateUpdater<ProviderState<State>> = state => {
       prevState = state.state;
       return {
         state: Object.assign({}, state.state, {
@@ -151,16 +149,17 @@ class Provider<State, C extends keyof State, K> extends React.Component<
       }
     };
 
+    // @ts-ignore
     this.setState(updaterFn, callbackFn);
   };
 
-  getProps = (type?: K) => {
+  getProps = (type?: string) => {
     const { state, setContextState } = this.state;
     return {
       state,
       setContextState: (
-        context: C,
-        updater: StateUpdater<State[C]>,
+        context: string,
+        updater: StateUpdater<State> | Partial<State>,
         callback?: StateCallback
       ) => setContextState(context, updater, callback, type)
     };
@@ -168,6 +167,7 @@ class Provider<State, C extends keyof State, K> extends React.Component<
 
   render() {
     return (
+      // @ts-ignore
       <Context.Provider value={this.state}>
         {this.props.children}
       </Context.Provider>

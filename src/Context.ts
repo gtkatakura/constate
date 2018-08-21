@@ -1,7 +1,7 @@
 import * as React from "react";
-import { StateUpdater, StateCallback } from "./types";
+import { StateUpdater, StateCallback, MountContainer } from "./types";
 
-interface ContextState {
+export interface ContextState {
   state: {
     [key: string]: any;
   };
@@ -11,10 +11,7 @@ interface ContextState {
     callback?: StateCallback,
     type?: K
   ) => void;
-  mountContainer: <C>(
-    context: C,
-    onMount?: () => void
-  ) => (onUnmount?: () => void) => void;
+  mountContainer: MountContainer;
 }
 
 const Context = React.createContext({} as ContextState);

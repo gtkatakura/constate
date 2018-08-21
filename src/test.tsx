@@ -30,7 +30,6 @@ const selectors: SelectorMap<State, Selectors> = {
 
 const CounterContainer: ComposableContainer<
   State,
-  C,
   Actions,
   Selectors
 > = props => (
@@ -53,7 +52,7 @@ const MyComponent = () => (
       context="cacete"
     >
       {({ count, increment }) => (
-        <button onClick={() => increment()}>{count}</button>
+        <button onClick={() => increment(3)}>{count}</button>
       )}
     </CounterContainer>
   </Provider>
