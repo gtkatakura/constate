@@ -130,8 +130,8 @@ export interface OnUpdateProps<S, K> extends EffectProps<S> {
  * @template S State
  * @template K Possible values of the `type` argument
  */
-export interface OnUpdate<S, K> {
-  (props: OnUpdateProps<S, K | EventKeys>): any;
+export interface OnUpdate<S, AP = {}, EP = {}> {
+  (props: OnUpdateProps<S, keyof AP | keyof EP | EventKeys>): any;
 }
 
 /**
@@ -181,13 +181,13 @@ export type MountContainer = (
  * @template EP Map of effects to be passed to the children function
  */
 export interface ContainerProps<S, AP = {}, SP = {}, EP = {}> {
-  initialState: Partial<S>;
+  initialState?: Partial<S>;
   context?: string;
   actions?: ActionMap<S, AP>;
   selectors?: SelectorMap<S, SP>;
   effects?: EffectMap<S, EP>;
   onMount?: OnMount<S>;
-  onUpdate?: OnUpdate<S, keyof AP | keyof EP>;
+  onUpdate?: OnUpdate<S, AP, EP>;
   onUnmount?: OnUnmount<S>;
   shouldUpdate?: ShouldUpdate<S>;
   children: (props: S & AP & SP & EP) => React.ReactNode;

@@ -34,7 +34,7 @@ test("mapPropsToEffects", () => {
 });
 
 test("parseUpdater", () => {
-  expect(parseUpdater({ foo: "bar" })).toEqual({ foo: "bar" });
+  expect(parseUpdater({ foo: "bar" }, {})).toEqual({ foo: "bar" });
   expect(
     parseUpdater(state => ({ count: state.count + 1 }), { count: 10 })
   ).toEqual({ count: 11 });

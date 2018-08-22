@@ -11,10 +11,6 @@ const external = Object.keys(pkg.peerDependencies || {});
 const allExternal = [...external, Object.keys(pkg.dependencies || {})];
 const extensions = [".ts", ".tsx", ".js", ".jsx", ".json"];
 
-const common = {
-  input: "src/index.js"
-};
-
 const createCommonPlugins = () => [
   babel({
     exclude: "node_modules/**"
@@ -23,7 +19,7 @@ const createCommonPlugins = () => [
 ];
 
 const main = {
-  input: "src/index.js",
+  input: "src/index.ts",
   output: [
     {
       file: pkg.main,
@@ -39,7 +35,8 @@ const main = {
   plugins: [...createCommonPlugins(), resolve({ extensions })]
 };
 
-const unpkg = Object.assign({}, common, {
+const unpkg = {
+  input: "src/index.ts",
   output: {
     name: pkg.name,
     file: pkg.unpkg,
@@ -61,9 +58,10 @@ const unpkg = Object.assign({}, common, {
       "process.env.NODE_ENV": JSON.stringify("production")
     }),
     resolve({
+      extensions,
       preferBuiltins: false
     })
   ]
-});
+};
 
 export default [main, unpkg];
